@@ -36,7 +36,7 @@
 ```
 
 # Notes & Ideas
-- ...
+- Test commit from a different device.
 
 # Latest Changes
 Added TODO and project plan.
