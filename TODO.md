@@ -30,17 +30,17 @@
 ```
 ❌ | utils/input_parser/*
 🔄 | utils/maze_generator/*
-⬛ |-| Generated mazes often don't have a path from start to finish.
+⬛ |-| Replace width and height with size (always a square maze).
 ❌ | utils/algorithms/base_algorithm.py
 ❌ | utils/maze_solver/*
 ❌ | utils/aglorithms/*
 ```
 
 # Notes & Ideas
-- ...
+- Starting position of the maze is bottom left, and ending position is top right.
 
 # Latest Changes
-Began work on the maze generator.
+Improved and fixed the maze generator.
 
-- Added MazeGenerator class.
-  - Added functions for generating a random maze.
+- Fixed the path generation to always have a path from beginning to end.
+  - Though, it only works for square mazes.

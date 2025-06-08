@@ -8,9 +8,6 @@ class MazeGenerator:
         """
         Create a new instance of the MazeGenerator class.
 
-        Note:
-            Do NOT set either symbol to "?" .
-
         Arguments:
             wall_symbol: Representation of a wall space.
             path_symbol: Representation of a path space.
@@ -18,7 +15,6 @@ class MazeGenerator:
 
         self.wall = wall_symbol
         self.path = path_symbol
-        self.path_temp = '?'
 
 
     def _gen_empty_maze(self, width: int, height: int) -> list[list[...]]:
@@ -37,57 +33,59 @@ class MazeGenerator:
         return maze
 
 
-    def _gen_maze_paths(self, maze: list[list[...]]) -> list[list[...]]:
+    def _gen_maze_paths(self, maze: list[list[...]], width: int, height: int) -> list[list[...]]:
         """ Helper function for creating paths through an empty maze. """
 
-        width, height = len(maze[0]) - 1, len(maze) - 1
-        u_limit, d_limit, l_limit, r_limit = 0, height, 1, width
-        direction = 0, 1
-        x, y = 0, -1
+        u_limit, d_limit, l_limit, r_limit = 1, height * 2 - 1, 3, width * 2 - 1
+        direction = 2, 0
+        row, col = -1, 1
 
         for _ in range(width * height):
-            x, y = x + direction[0], y + direction[1]
+            row, col = row + direction[0], col + direction[1]
 
-            if direction == (0, 1):
-                if maze[x][y] == self.path:
-                    xp, yp = random.choice(((0, 1), (1, 0)))
-                    maze[x + xp][y + yp] = self.path_temp
-                if y == d_limit:
-                    direction = 1, 0
-                    d_limit -= 1
+            if direction == (2, 0):
+                if row == d_limit:
+                    direction = 0, 2
+                    d_limit -= 2
+                    path_r, path_c = 0, 1
+                else:
+                    path_r, path_c = random.choice(((1, 0), (0, 1)))
+
+                maze[row + path_r][col + path_c] = self.path
                 continue
 
-            if direction == (1, 0):
-                if maze[x][y] == self.path:
-                    xp, yp = random.choice(((0, -1), (1, 0)))
-                    maze[x + xp][y + yp] = self.path_temp
-                if x == r_limit:
-                    direction = 0, -1
-                    r_limit -= 1
+            if direction == (0, 2):
+                if col == r_limit:
+                    direction = -2, 0
+                    r_limit -= 2
+                    path_r, path_c = -1, 0
+                else:
+                    path_r, path_c = random.choice(((0, 1), (-1, 0)))
+
+                maze[row + path_r][col + path_c] = self.path
                 continue
 
-            if direction == (0, -1):
-                if maze[x][y] == self.path:
-                    xp, yp = random.choice(((0, -1), (-1, 0)))
-                    maze[x + xp][y + yp] = self.path_temp
-                if y == u_limit:
-                    direction = -1, 0
-                    u_limit += 1
+            if direction == (-2, 0):
+                if row == u_limit:
+                    direction = 0, -2
+                    u_limit += 2
+                    path_r, path_c = 0, -1
+                else:
+                    path_r, path_c = random.choice(((0, -1), (-1, 0)))
+
+                maze[row + path_r][col + path_c] = self.path
                 continue
 
-            if direction == (-1, 0):
-                if maze[x][y] == self.path:
-                    xp, yp = random.choice(((0, 1), (-1, 0)))
-                    maze[x + xp][y + yp] = self.path_temp
-                if x == l_limit:
-                    direction = 0, 1
-                    l_limit += 1
-                continue
+            if direction == (0, -2):
+                if col == l_limit:
+                    direction = 2, 0
+                    l_limit += 2
+                    path_r, path_c = 1, 0
+                else:
+                    path_r, path_c = random.choice(((0, -1), (1, 0)))
 
-        for row in range(height + 1):
-            for col in range(width + 1):
-                if maze[row][col] == self.path_temp:
-                    maze[row][col] = self.path
+                maze[row + path_r][col + path_c] = self.path
+                continue
 
         return maze
 
@@ -105,9 +103,16 @@ class MazeGenerator:
         """
 
         maze = self._gen_empty_maze(width, height)
-        maze = self._gen_maze_paths(maze)
+        maze = self._gen_maze_paths(maze, width, height)
 
         return maze
 
 
 __all__ = ['MazeGenerator']
+
+
+
+mg = MazeGenerator('🟦', '⬛')
+m = mg.generate(4, 10)
+for i in m:
+    print(''.join(i))
