@@ -1,7 +1,7 @@
 import random
 
 from .base_algorithm import BaseAlgorithm
-from utils.maze_generator import MazeGenerator
+from utils.maze_generator import Maze
 
 
 class Wanderer(BaseAlgorithm):
@@ -16,23 +16,16 @@ class Wanderer(BaseAlgorithm):
     confused: bool = None
 
 
-    def setup(self, mg_instance: MazeGenerator, max_steps: int | str = 'auto', confused: bool = False) -> None:
+    def setup(self, maze: Maze, confused: bool = False) -> None:
         """
         Set up the algorithm.
 
-         Maximum Steps Options:
-            - <int> | Exact number of allowed steps.
-            - 'auto' | Equal to `(maze_size * 2 + 1) ^ 2`.
-            - 'fewest' | Equal to `(start_pos - end_pos + size)`.
-            - 'unlimited' | Unlimited number of allowed steps.
-
         Arguments:
-            mg_instance: Instance of the MazeGenerator class.
-            max_steps: The maximum amount of steps allowed.
+            maze: Instance of the Maze class.
             confused: Whether the wanderer is confused.
         """
 
-        super().setup(mg_instance, max_steps)
+        super().setup(maze)
         self.confused = confused
 
 
@@ -40,7 +33,6 @@ class Wanderer(BaseAlgorithm):
         if not self.can_take_step():
             return None
 
-        self.steps_taken += 1
         legal_moves = self.get_legal_moves()
 
         for space in self.visited_spaces:

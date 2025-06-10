@@ -21,10 +21,12 @@
 ✅ |-| maze_generator/
 ✅ |-|-| __init__.py
 ✅ |-|-| maze_generator.py
+✅ |-|-| maze.py
 ⬛ |-|
 ❌ |-| maze_solver/
 ✅ |-|-| __init__.py
 🔄 |-|-| maze_solver.py
+✅ |-|-| progress_tracker.py
 ```
 
 # TODO
@@ -44,16 +46,10 @@
 - ...
 
 # Latest Changes
-Finished MazeGenerator, added Wanderer algorithm, and started work on MazeSolver.
+Refactored MazeGenerator and MazeSolver.
 
-- Finished the Maze Generator.
-  - Replaced `width` and `height` with `size`. It can now generate square mazes only.
-  - Added options to set starting and ending positions, or pick them randomly.
-  - The last generated maze is now saved within the class for easier algorithm testing.
-  - Fixed an issue where if the maze size is an even number, the middle space was unreachable.
-- Finished the base algorithm (abstract representation of other algorithms).
-- Added Wanderer algorithm.
-- Began work on the Maze Solver.
-  - Added functionality to run a chosen algorithm on different mazes.
-  - Added real time progress display.
-- Updated requirements.txt to include `sty` for console coloring.
+- Made a separate class for mazes instead of saving them inside MazeGenerator.
+- Made MazeGenerator static.
+- Made MazeSolver non-static.
+- Made a separate class for progress tracking and displaying real time progress.
+- Removed max_steps from BaseAlgorithm.

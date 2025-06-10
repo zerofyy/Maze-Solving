@@ -1,14 +1,39 @@
 from utils.algorithms import Wanderer
 from utils.maze_solver import MazeSolver
+from utils.maze_generator import MazeGenerator
 
 
-algorithm_settings = {'algorithm' : Wanderer, 'max_steps' : 'auto', 'confused' : False}
-mazes = [{'size' : 10, 'start_pos' : 'random', 'end_pos' : 'middle', 'num_iterations' : 1}]
+algorithm = {
+    'algorithm' : Wanderer,
+    'args' : {
+        'confused' : False
+    }
+}
 
-MazeSolver.run(
-    algorithm_settings,
-    mazes,
-    wait_after_step = 20,
-    real_time_progress = 'visual'
+mazes = [
+    {
+        'maze' : MazeGenerator.generate(8, 'random', 'random'),
+        'max_steps' : 'auto',
+        'num_iterations' : 1
+    }
+]
+
+ms = MazeSolver(
+    algorithm_args = algorithm,
+    mazes = mazes,
+    measure_performance = False,
+    wait_after_step = 100,
+    show_progress = 'visual'
 )
+
+ms.run()
+
 input('...')
+
+'''
+Maximum Steps Options:
+    - <int> | Exact number of allowed steps.
+    - 'auto' | Equal to `(maze_size * 2 + 1) ^ 2`.
+    - 'fewest' | Equal to `(start_pos - end_pos + size)`.
+    - 'unlimited' | Unlimited number of allowed steps.
+'''

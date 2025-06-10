@@ -1,106 +1,17 @@
 import time
-import copy
 import os
-from sty import fg as Text, bg as Back, rs as Rest
 
-from utils.maze_generator import MazeGenerator
-from utils.algorithms import BaseAlgorithm
+from utils.maze_generator import Maze
+from .progress_tracker import ProgressTracker
 
 
 class MazeSolver:
-    """ Static class for running maze solving algorithms and measuring their performance. """
+    """ Class for running maze solving algorithms and measuring their performance. """
 
-
-    @staticmethod
-    def show_progress(algorithm: BaseAlgorithm, progress_option: str | None,
-                      return_str: bool = False, clear_print: bool = True, coloring: bool = True) -> str | None:
+    def __init__(self, algorithm_args: dict[str, ...], mazes: list[dict[str, ...]], measure_performance: bool = True,
+                 wait_after_step: int | str | None = None, show_progress: str | None = 'text') -> None:
         """
-        Get the progress of the given algorithm.
-
-        Progress Options:
-            - 'text' | Show the algorithm's progress in text only.
-            - 'visual' | Show the algorithm's progress in text along with a visual representation of the maze.
-            - None | No real time progression display.
-
-        Arguments:
-            algorithm: Algorithm instance.
-            progress_option: The type of progress to display.
-            return_str: Whether to return the progress as a string.
-                        Setting this to False will print it to the console.
-            clear_print: Whether to clear the console when printing.
-            coloring: Whether to use colors for the progress display.
-        """
-
-        if progress_option is None:
-            return '' if return_str else None
-
-        time_passed = round(time.time() - algorithm.start_time, 2)
-        end_distance = abs(algorithm.current_pos[0] - algorithm.end_pos[0] +
-                           algorithm.current_pos[1] + algorithm.end_pos[1])
-
-        if coloring:
-            if end_distance > 15:
-                distance_color = Text.li_red
-            elif end_distance >= 10:
-                distance_color = Text.li_yellow
-            else:
-                distance_color = Text.li_green
-            progress = f'Time: {Text.li_blue}{time_passed} sec{Rest.all} | ' \
-                       f'Steps: {Text.li_magenta}{algorithm.steps_taken}{Rest.all}' \
-                       f'/{Text.li_magenta}{algorithm.max_steps}{Rest.all} | ' \
-                       f'Visited {Text.li_yellow}{len(algorithm.visited_spaces)}{Rest.all} unique spaces | ' \
-                       f'About {distance_color}{end_distance}{Rest.all} spaces away from the end'
-        else:
-            progress = f'Time: {time_passed} sec | ' \
-                       f'Steps: {algorithm.steps_taken}/{algorithm.max_steps} | ' \
-                       f'Visited {len(algorithm.visited_spaces)} unique spaces | ' \
-                       f'About {end_distance} spaces away from the end'
-
-        if progress_option == 'visual':
-            visual = ''
-            maze = copy.deepcopy(algorithm.maze)
-
-            if coloring:
-                for space in algorithm.visited_spaces:
-                    maze[space[0]][space[1]] = f'{Back.li_yellow}   {Rest.all}'
-
-                maze[algorithm.end_pos[0]][algorithm.end_pos[1]] = f'{Back.li_red}   {Rest.all}'
-                maze[algorithm.current_pos[0]][algorithm.current_pos[1]] = f'{Back.li_green}   {Rest.all}'
-
-                for row in maze:
-                    row = ''.join(row)
-                    visual += f'{row}{"":{algorithm.size ** 2}}\n'
-
-                visual = visual.replace(algorithm.wall, f'{Back.li_blue}   {Rest.all}')
-                visual = visual.replace(algorithm.path, f'{Back.black}   {Rest.all}')
-
-            else:
-                maze[algorithm.end_pos[0]][algorithm.end_pos[1]] = ' ! '
-                maze[algorithm.current_pos[0]][algorithm.current_pos[1]] = ' + '
-
-                for row in maze:
-                    row = ''.join(row)
-                    visual += f'{row}\n'
-
-                visual = visual.replace(algorithm.wall, '[/]')
-                visual = visual.replace(algorithm.path, '   ')
-
-            progress += f'\n{visual}{Rest.all}'
-
-        if return_str:
-            return progress
-
-        if clear_print:
-            print(f'\033[{algorithm.size ** 2}A\033[2K', end = '')
-
-        print(progress)
-
-
-    @staticmethod
-    def run(algorithm_settings: dict[str, ...], mazes: list[dict[str, ...]], measure_performance: bool = False,
-            wait_after_step: int | str | None = None, real_time_progress: str | None = 'text') -> dict[str, ...] | None:
-        """
-        Run a specific algorithm on the given mazes.
+        Create a new instance of the MazeSolver class and set it up.
 
         Waiting Methods:
             - <int> | Number of milliseconds to wait.
@@ -113,41 +24,85 @@ class MazeSolver:
             - None | No real time progression display.
 
         Arguments:
-             algorithm_settings: Dictionary containing algorithm settings.
+             algorithm_args: Dictionary containing algorithm settings.
              mazes: List of dictionaries containing settings for different mazes.
              measure_performance: Whether to measure the algorithm's performance for each maze.
              wait_after_step: The method for waiting after each step.
-             real_time_progress: The type of real time progress to display when running the algorithm.
-
-        Returns:
-            A dictionary of statistics for the algorithm or None if measure_performance is set to False.
+             show_progress: The type of real time progress to display when running the algorithm.
         """
 
         os.system('')  # Required for the progress display colors to work.
+
+        self.algorithm_args = algorithm_args
+        self.mazes = mazes
+        self.measure_performance = measure_performance
+        self.show_progress = show_progress
 
         def wait_method():
             if wait_after_step == 'input':
                 input('... waiting for input ...')
             elif wait_after_step is not None:
                 time.sleep(wait_after_step / 1000)
+        self.wait_after_step = wait_method
 
-        for maze_settings in mazes:
-            maze = MazeGenerator(maze_settings['size'])
-            maze.set_start_end_coords(maze_settings['start_pos'], maze_settings['end_pos'])
 
-            for i in range(maze_settings['num_iterations']):
-                algorithm = algorithm_settings['algorithm']()
-                algorithm_settings.pop('algorithm')
-                algorithm.setup(maze, **algorithm_settings)
-                algorithm.start_time = time.time()
+    @staticmethod
+    def _get_max_steps(maze: Maze, max_steps: str | int) -> int:
+        """ Helper function for calculating the maximum number of allowed steps. """
 
-                while True:
-                    step = algorithm.step()
-                    if step is None:
-                        break
+        match max_steps:
+            case 'auto':
+                return maze.size_matrix ** 2
+            case 'fewest':
+                return abs(maze.start_pos[0] - maze.end_pos[0]) + abs(maze.start_pos[1] - maze.end_pos[1]) + maze.size
+            case 'unlimited':
+                return 0
+            case _:
+                return int(max_steps)
 
-                    MazeSolver.show_progress(algorithm, real_time_progress)
-                    wait_method()
+
+    def _solve(self, maze_args: dict[str, ...]) -> dict[str, ...]:
+        """ Helper function for solving a maze and collecting results. """
+
+        maze = maze_args['maze']
+        algorithm = self.algorithm_args['algorithm']()
+        algorithm.setup(maze, **self.algorithm_args['args'])
+        max_steps = self._get_max_steps(maze, maze_args['max_steps'])
+
+        pt = ProgressTracker(algorithm, maze, max_steps, self.show_progress)
+        pt.track()
+
+        while True:
+            step = algorithm.step()
+            if step is None:
+                break
+
+            pt.update()
+
+            if max_steps != 0 and pt.steps_taken == max_steps:
+                break
+
+            pt.get_progress()
+            self.wait_after_step()
+
+        return {}
+
+
+    def run(self) -> dict[str, ...] | None:
+        """
+        Run the algorithm on all given mazes.
+
+        Returns:
+            A dictionary of statistics for the algorithm or None if measure_performance is set to False.
+        """
+
+        time_taken = time.time()
+
+        for maze_args in self.mazes:
+            for i in range(maze_args['num_iterations']):
+                results = self._solve(maze_args)
+
+                # ...
 
         return None
 
