@@ -2,8 +2,8 @@ from abc import abstractmethod, ABC
 from utils.maze_generator import Maze
 
 
-class BaseAlgorithm(ABC):
-    """ Abstract class representing a maze solving algorithm. """
+class BaseAlgorithmSequential(ABC):
+    """ Abstract class representing a sequential maze solving algorithm. """
 
     maze: Maze = None
     current_pos: tuple[int, int] = None
@@ -20,7 +20,7 @@ class BaseAlgorithm(ABC):
 
         self.maze = maze
         self.current_pos = maze.start_pos
-        self.visited_spaces = []
+        self.visited_spaces = [self.current_pos]
 
 
     def get_legal_moves(self) -> list[tuple[int, int]]:
@@ -43,7 +43,7 @@ class BaseAlgorithm(ABC):
     def can_take_step(self) -> bool:
         """ Check whether a step can be taken. """
 
-        return self.current_pos != self.maze.end_pos
+        return self.current_pos != self.maze.end_pos and self.get_legal_moves()
 
 
     @abstractmethod
@@ -52,9 +52,8 @@ class BaseAlgorithm(ABC):
         Take a step in the maze.
 
         Returns:
-            The coordinates of the chosen direction from the current position or None if no move
-            is chosen. None may be returned if the algorithm exceeds the maximum number of allowed
-            steps or if it reaches the ending position in the maze.
+            The coordinates of the chosen direction from the current position or None.
+            None may be returned if there are no legal moves or the end position in the maze is reached.
         """
 
         if not self.can_take_step():
@@ -68,4 +67,4 @@ class BaseAlgorithm(ABC):
         return self.current_pos
 
 
-__all__ = ['BaseAlgorithm']
+__all__ = ['BaseAlgorithmSequential']

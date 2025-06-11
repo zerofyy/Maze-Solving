@@ -10,8 +10,15 @@
 ⬛ |-|
 ❌ |-| algorithms/
 🔄 |-|-| __init__.py
-✅ |-|-| base_algorithm.py
-✅ |-|-| wanderer.py
+⬛ |-|-|
+✅ |-|-| base_algorithm/
+✅ |-|-|-| __init__.py
+✅ |-|-|-| base_algorithm_sequential.py
+✅ |-|-|-| base_algorithm_parallel.py
+✅ |-|-| wanderer/
+✅ |-|-|-| __init__.py
+✅ |-|-|-| wanderer_sequential.py
+❌ |-|-|-| wanderer_parallel.py
 ❌ |-|-| ...
 ⬛ |-|
 ❌ |-| input_parser/
@@ -30,26 +37,22 @@
 ```
 
 # TODO
-```
-❌ | utils/input_parser/*
-✅ | utils/maze_generator/*
-✅ | utils/algorithms/base_algorithm.py
-⬛ |-| Might need some changes for parallel implementations of algorithms.
-🔄 | utils/maze_solver/*
-⬛ |-| Add performance measurements.
-⬛ |-| Might need some changes for parallel implementations of algorithms.
-⬛ |-| Fix buggy visual display for mazes sizes greater than 10.
-❌ | utils/aglorithms/*
-```
+- Fix the parallel implementation of base algorithm.
+- `utils/input_parser/*`
+- `utils/maze_solver/*`
+  - Add performance measurements.
+  - Might need some changes for parallel implementations of algorithms.
+  - Fix buggy visual display for mazes sizes greater than 10.
+- `utils/algorithms/*`
 
 # Notes & Ideas
 - ...
 
 # Latest Changes
-Refactored MazeGenerator and MazeSolver.
+Began implementing multiprocessing.
 
-- Made a separate class for mazes instead of saving them inside MazeGenerator.
-- Made MazeGenerator static.
-- Made MazeSolver non-static.
-- Made a separate class for progress tracking and displaying real time progress.
-- Removed max_steps from BaseAlgorithm.
+- Fixed starting position not being saved as visited by algorithms.
+- Reorganized algorithms in separate folders containing both sequential and parallel versions.
+- Implemented an abstract representation of a parallel algorithm.
+- Updated the ProgressTracker to be compatible with parallel algorithms.
+- Updated TODO.

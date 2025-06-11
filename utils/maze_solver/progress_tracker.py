@@ -1,7 +1,7 @@
 import time
 from sty import fg as Text, bg as Back, rs as Rest
 
-from utils.algorithms import BaseAlgorithm
+from utils.algorithms import BaseAlgorithmSequential, BaseAlgorithmParallel
 from utils.maze_generator import Maze
 
 
@@ -11,7 +11,8 @@ class ProgressTracker:
     time_start: float = None
 
 
-    def __init__(self, algorithm: BaseAlgorithm, maze: Maze, max_steps: int, progress_display: str | None) -> None:
+    def __init__(self, algorithm: BaseAlgorithmSequential | BaseAlgorithmParallel,
+                 maze: Maze, max_steps: int, progress_display: str | None) -> None:
         """
         Create a new instance of the ProgressTracker class.
 
@@ -46,6 +47,20 @@ class ProgressTracker:
         self.steps_taken += 1
 
 
+    def _get_end_distance(self, current_pos: tuple[int, int] | list[tuple[int, int]]) -> int:
+        """ Helper function for calculating the distance from the end position in the maze. """
+
+        if isinstance(current_pos, tuple):
+            return int(
+                abs(current_pos[0] - self.maze.end_pos[0]) +
+                abs(current_pos[1] - self.maze.end_pos[1])
+            )
+
+        return max(
+            [self._get_end_distance(pos) for pos in current_pos]
+        )
+
+
     def get_progress(self, return_str: bool = False, clear_print: bool = True, coloring: bool = True) -> str | None:
         """
         Get the progress of the currently running algorithm.
@@ -61,8 +76,7 @@ class ProgressTracker:
             return '' if return_str else None
 
         time_passed = round(time.time() - self.time_start, 2)
-        end_distance = (abs(self.algorithm.current_pos[0] - self.maze.end_pos[0]) +
-                        abs(self.algorithm.current_pos[1] - self.maze.end_pos[1]))
+        end_distance = self._get_end_distance(self.algorithm.current_pos)
 
         if coloring:
             if end_distance > 15:

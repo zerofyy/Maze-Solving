@@ -7,8 +7,8 @@ class Maze:
 
     start_pos: tuple[int, int] = None
     end_pos: tuple[int, int] = None
-    wall: ... = None
-    path: ... = None
+    wall: int = None
+    path: int = None
 
 
     def __init__(self, maze: list[list[int]], start_pos: str, end_pos: str) -> None:

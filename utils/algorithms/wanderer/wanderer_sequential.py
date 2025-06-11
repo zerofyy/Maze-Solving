@@ -1,10 +1,10 @@
 import random
 
-from .base_algorithm import BaseAlgorithm
+from utils.algorithms.base_algorithm import BaseAlgorithmSequential
 from utils.maze_generator import Maze
 
 
-class Wanderer(BaseAlgorithm):
+class WandererSequential(BaseAlgorithmSequential):
     """
     Simple sequential algorithm that explores the maze through random moves.
 
@@ -50,4 +50,4 @@ class Wanderer(BaseAlgorithm):
         return self.current_pos
 
 
-__all__ = ['Wanderer']
+__all__ = ['WandererSequential']
