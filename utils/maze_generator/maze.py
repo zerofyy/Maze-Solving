@@ -84,4 +84,18 @@ class Maze:
         self.end_pos = end_crds
 
 
+    def get_maze_data(self) -> dict[str, ...]:
+        """ Get the maze data as a dictionary. """
+
+        return {
+            'maze': self.maze,
+            'start_pos': self.start_pos,
+            'end_pos': self.end_pos,
+            'wall': self.wall,
+            'path': self.path,
+            'size_matrix': self.size_matrix,
+            'size': self.size
+        }
+
+
 __all__ = ['Maze']

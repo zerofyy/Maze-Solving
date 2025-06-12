@@ -56,7 +56,7 @@ class ProgressTracker:
                 abs(current_pos[1] - self.maze.end_pos[1])
             )
 
-        return max(
+        return min(
             [self._get_end_distance(pos) for pos in current_pos]
         )
 
@@ -117,7 +117,8 @@ class ProgressTracker:
                     space = self.maze.maze[row][col]
                     if space == self.maze.wall:
                         maze_display += space_wall
-                    elif (row, col) == self.algorithm.current_pos:
+                    elif (row, col) == self.algorithm.current_pos \
+                            or isinstance(self.algorithm.current_pos, list) and (row, col) in self.algorithm.current_pos:
                         maze_display += space_current
                     elif (row, col) == self.maze.end_pos:
                         maze_display += space_end

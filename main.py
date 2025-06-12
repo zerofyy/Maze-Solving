@@ -5,38 +5,37 @@ from utils.maze_solver import MazeSolver
 from utils.maze_generator import MazeGenerator
 
 
+class BAS(BaseAlgorithmSequential):
+    def step(self):
+        return super().step()
+
+
+class BAP(BaseAlgorithmParallel):
+    @staticmethod
+    def _process_step(process_id, maze_data, shared_state, coms_queue):
+        return BaseAlgorithmParallel._process_step(process_id, maze_data, shared_state, coms_queue)
+
+    def step(self):
+        return super().step()
+
+
 if __name__ == '__main__':
     mp.freeze_support()
     mp.set_start_method('spawn', force = True)
 
-
     input('... preventing program from starting by waiting for input ...')
-
-
-    class BAS(BaseAlgorithmSequential):
-        def step(self):
-            return super().step()
-
-
-    class BAP(BaseAlgorithmParallel):
-        def _process_step(self, process_id, shared_state, coms_queue):
-            return super()._process_step(process_id, shared_state, coms_queue)
-
-        def step(self):
-            return super().step()
-
 
     algorithm = {
         'algorithm' : BAP,
         'args' : {
             # 'confused' : False
-            'num_processes' : 2
+            'num_processes' : 4
         }
     }
 
     mazes = [
         {
-            'maze' : MazeGenerator.generate(8, 'random', 'random'),
+            'maze' : MazeGenerator.generate(10, 'random', 'random'),
             'max_steps' : 'auto',
             'num_iterations' : 1
         }

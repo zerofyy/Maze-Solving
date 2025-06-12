@@ -37,7 +37,8 @@
 ```
 
 # TODO
-- Fix the parallel implementation of base algorithm.
+- Refactor the parallel implementation of base algorithm.
+- Fix "jumping spaces" when processes make moves. Might be because the main process doesn't wait after sending STEP commands.
 - `utils/input_parser/*`
 - `utils/maze_solver/*`
   - Add performance measurements.
@@ -49,10 +50,10 @@
 - ...
 
 # Latest Changes
-Began implementing multiprocessing.
+Somewhat fixed the parallel implementation of the base algorithm.
 
-- Fixed starting position not being saved as visited by algorithms.
-- Reorganized algorithms in separate folders containing both sequential and parallel versions.
-- Implemented an abstract representation of a parallel algorithm.
-- Updated the ProgressTracker to be compatible with parallel algorithms.
+- Changed all complex objects to dictionaries for use in parallel processing.
+- Added function to Maze to return all its data as a dictionary.
+- Fixed the ProgressTracker not showing the location of all processes.
+- Fixed the ProgressTracker incorrectly calculated the closest distance to the end position.
 - Updated TODO.
