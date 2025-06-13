@@ -14,6 +14,7 @@ class WandererSequential(BaseAlgorithmSequential):
     """
 
     confused: bool = None
+    visited_spaces_weights: dict[tuple[int, int], int] = None
 
 
     def setup(self, maze: Maze, confused: bool = False) -> None:
@@ -27,27 +28,30 @@ class WandererSequential(BaseAlgorithmSequential):
 
         super().setup(maze)
         self.confused = confused
+        self.visited_spaces_weights = {}
 
 
-    def step(self) -> tuple[int, int] | None:
-        if not self.can_take_step():
-            return None
-
+    def _step_logic(self) -> tuple[int, int]:
         legal_moves = self.get_legal_moves()
 
-        for space in self.visited_spaces:
+        if self.confused:
+            return random.choice(legal_moves)
+
+        for space in self.visited_spaces_weights:
             if space in legal_moves:
                 legal_moves.remove(space)
 
-        if not self.confused and legal_moves:
-            self.current_pos = random.choice(legal_moves)
+        if legal_moves:
+            new_pos = random.choice(legal_moves)
         else:
-            self.current_pos = random.choice(self.get_legal_moves())
+            new_pos = min(self.get_legal_moves(), key = self.visited_spaces_weights.get)
 
-        if self.current_pos not in self.visited_spaces:
-            self.visited_spaces.append(self.current_pos)
+        if new_pos not in self.visited_spaces_weights:
+            self.visited_spaces_weights[new_pos] = 1
+        else:
+            self.visited_spaces_weights[new_pos] += 1
 
-        return self.current_pos
+        return new_pos
 
 
 __all__ = ['WandererSequential']

@@ -66,23 +66,25 @@ class MazeSolver:
 
         maze = maze_args['maze']
         algorithm = self.algorithm_args['algorithm']()
-        algorithm.setup(maze, **self.algorithm_args['args'])
+        algorithm.setup(maze = maze, **self.algorithm_args['args'])
         max_steps = self._get_max_steps(maze, maze_args['max_steps'])
 
         pt = ProgressTracker(algorithm, maze, max_steps, self.show_progress)
         pt.track()
 
         while True:
-            step = algorithm.step()
-            if step is None:
-                break
-
-            pt.update()
-
             if max_steps != 0 and pt.steps_taken == max_steps:
                 break
 
+            new_pos, status = algorithm.step()
+            pt.update()
             pt.get_progress()
+
+            if isinstance(status, dict) and status['reached_end'] or isinstance(status, bool) and status:
+                break
+            if new_pos is None:
+                break
+
             self.wait_after_step()
 
         return {}

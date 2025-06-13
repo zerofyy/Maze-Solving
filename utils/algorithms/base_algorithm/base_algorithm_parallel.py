@@ -1,7 +1,6 @@
-import random
+import time
 from abc import abstractmethod, ABC
 import multiprocessing as mp
-import time
 
 from utils.maze_generator import Maze
 
@@ -9,16 +8,19 @@ from utils.maze_generator import Maze
 class BaseAlgorithmParallel(ABC):
     """ Abstract class representing a parallel maze solving algorithm. """
 
-    maze: Maze = None
+    maze_data: dict[str, ...] = None
     current_pos: list[tuple[int, int]] = None
     visited_spaces: list[tuple[int, int]] = None
+
     num_processes: int = None
-    shared_state: dict[str | int, ...] = None
     processes: list[mp.Process] = None
-    coms_queue: mp.Queue = None
+
+    manager: mp.Manager = None
+    shared_memory: dict[str | int, ...] = None
+    com_queue: mp.Queue = None
 
 
-    def setup(self, maze: Maze, num_processes: int = None) -> None:
+    def setup(self, maze: Maze, num_processes: int = 4) -> None:
         """
         Set up the algorithm.
 
@@ -27,181 +29,198 @@ class BaseAlgorithmParallel(ABC):
             num_processes: Number of processes, defaults to 4 or less.
         """
 
-        self.maze = maze
-        self.num_processes = num_processes if num_processes else min(4, mp.cpu_count)
+        self.maze_data = maze.get_maze_data()
+        self.num_processes = min(num_processes, mp.cpu_count()) if num_processes else min(4, mp.cpu_count())
         self.current_pos = [maze.start_pos for _ in range(self.num_processes)]
         self.visited_spaces = [maze.start_pos]
 
-        manager = mp.Manager()
-        self.shared_state = manager.dict()
-        self.shared_state['is_solved'] = manager.Event()
+        self.manager = mp.Manager()
+        self.shared_memory = self.manager.dict()
+        self.shared_memory['reached_end'] = self.manager.Event()
+        self.shared_memory['visited_spaces'] = self.manager.list([maze.start_pos])
+        self.shared_memory['step_logic'] = self._step_logic
 
         for i in range(self.num_processes):
-            self.shared_state[i] = manager.dict({
+            self.shared_memory[i] = self.manager.dict({
                 'current_pos' : maze.start_pos,
-                'visited_spaces' : manager.list([maze.start_pos]),
                 'is_active' : True
             })
 
         self.processes = []
-        self.coms_queue = mp.Queue()
+        self.com_queue = mp.Queue()
         self._start_processes()
 
 
     def _start_processes(self) -> None:
         """ Helper function for starting all processes. """
 
-        maze_data = self.maze.get_maze_data()
-
         for i in range(self.num_processes):
             process = mp.Process(
                 target = self._process_step,
-                args = (i, maze_data, self.shared_state, self.coms_queue)
+                args = (i, self.maze_data, self.shared_memory, self.com_queue)
             )
             process.start()
             self.processes.append(process)
 
 
     @staticmethod
-    @abstractmethod
-    def _process_step(process_id: int, maze_data: dict[str, ...], shared_state: dict[str | int, ...],
-                      coms_queue: mp.Queue) -> None:
-        """ Static helper function for taking steps in the maze. """
+    def is_at_end(position: tuple[int, int], maze_data: dict[str, ...]) -> bool:
+        """
+        Check whether the current position matches the end position.
 
-        while True:
-            try:
-                command = coms_queue.get(timeout = 0.5)
-                if command == 'STOP':
-                    break
+        Arguments:
+            position: A specific position to check for legal moves.
+            maze_data: The maze data.
+        """
 
-                if shared_state['is_solved'].is_set():
-                    return None
-
-                state = shared_state[process_id]
-                if not state['is_active']:
-                    return None
-
-                current_pos = state['current_pos']
-                visited_spaces = list(state['visited_spaces'])
-
-                if not BaseAlgorithmParallel.can_take_step(current_pos, maze_data):
-                    state['is_active'] = False
-                    return None
-
-                legal_moves = BaseAlgorithmParallel.get_legal_moves(current_pos, maze_data)
-                # if process_id <= len(legal_moves) - 1:
-                #     current_pos = legal_moves[process_id]
-                # else:
-                #     current_pos = legal_moves[0]
-                for space in visited_spaces:
-                    if space in legal_moves:
-                        legal_moves.remove(space)
-                if legal_moves:
-                    random.seed(time.time() + process_id)
-                    current_pos = random.choice(legal_moves)
-                else:
-                    random.seed(time.time() + process_id)
-                    current_pos = random.choice(BaseAlgorithmParallel.get_legal_moves(current_pos, maze_data))
-
-                if current_pos not in visited_spaces:
-                    state['visited_spaces'].append(current_pos)
-
-                state['current_pos'] = current_pos
-
-            except:
-                if shared_state['is_solved'].is_set():
-                    break
+        return position == maze_data['end_pos']
 
 
     @staticmethod
-    def get_legal_moves(current_pos: tuple[int, int], maze_data: dict[str, ...]) -> list[tuple[int, int]]:
+    def get_legal_moves(position: tuple[int, int], maze_data: dict[str, ...]) -> list[tuple[int, int]]:
         """
         Get a list of legal moves (coordinates) from the current position.
 
         Arguments:
-            current_pos: Coordinates of the current position in the maze.
-            maze_data: The maze instance data.
+            position: A specific position to check for legal moves.
+            maze_data: The maze data.
         """
 
+        if position is None:
+            return []
+
+        if BaseAlgorithmParallel.is_at_end(position, maze_data) \
+                or maze_data['matrix'][position[0]][position[1]] == maze_data['wall']:
+            return []
+
         check_moves = [
-            (current_pos[0] - 1, current_pos[1]),
-            (current_pos[0] + 1, current_pos[1]),
-            (current_pos[0], current_pos[1] - 1),
-            (current_pos[0], current_pos[1] + 1)
+            (position[0] - 1, position[1]),
+            (position[0] + 1, position[1]),
+            (position[0], position[1] - 1),
+            (position[0], position[1] + 1)
         ]
 
         return [
             move for move in check_moves
             if 0 <= move[0] < maze_data['size_matrix'] and 0 <= move[1] < maze_data['size_matrix']
-            and maze_data['maze'][move[0]][move[1]] == maze_data['path']
+            and maze_data['matrix'][move[0]][move[1]] == maze_data['path']
         ]
 
 
     @staticmethod
-    def can_take_step(current_pos: tuple[int, int], maze_data: dict[str, ...]) -> bool:
+    def _process_step(process_id: int, maze_data: dict[str, ...],
+                      shared_memory: dict[str | int, ...], com_queue: mp.Queue) -> None:
+        """ Static helper function for taking steps in the maze. """
+
+        while True:
+
+            if shared_memory['reached_end'].is_set() or not shared_memory[process_id]['is_active']:
+                break
+
+            try:
+                command = com_queue.get(timeout = 0.5)
+                if command == 'STOP':
+                    shared_memory[process_id]['current_pos'] = None
+                    break
+
+                if command != 'STEP':
+                    continue
+
+                shared_memory['step_logic'](process_id, maze_data, shared_memory)
+            except:
+                pass
+
+
+    def _build_status_dict(self) -> dict[str, ...]:
+        """ Helper function for creating a feedback dictionary for the step function. """
+
+        return {
+            'reached_end' : self.shared_memory['reached_end'].is_set(),
+            'active_processes' : sum(1 for i in range(self.num_processes) if self.shared_memory[i]['is_active'])
+        }
+
+
+    def step(self) -> tuple[list[tuple[int, int]] | None, dict[str, ...]]:
         """
-        Check whether a step can be taken.
-
-        Arguments:
-            current_pos: Coordinates of the current position in the maze.
-            maze_data: The maze instance data.
-        """
-
-        return current_pos != maze_data['end_pos'] and BaseAlgorithmParallel.get_legal_moves(current_pos, maze_data)
-
-
-    @abstractmethod
-    def step(self) -> list[tuple[int, int]] | None:
-        """
-        Take steps in the maze.
+        Send a command to all active processes to take a step in the maze.
 
         Returns:
-            The coordinates of all chosen directions from each process or None.
-            None may be returned if there are no legal moves, the end position
-            in the maze is reached, or no processes are active.
+            A tuple containing information about the new step in **new_positions | None, reached_end** format.
+            The first element is a list of tuples with the coordinates of the new positions or None if there
+            are no legal moves. The second element is a dictionary containing information about the processes
+            and whether the end of the maze has been reached.
         """
 
-        if self.shared_state['is_solved'].is_set():
-            return None
+        status = self._build_status_dict()
+        if status['active_processes'] == 0 or status['reached_end']:
+            return None, status
 
-        active_processes = sum(1 for i in range(self.num_processes)
-                               if self.shared_state[i]['is_active'])
-        if active_processes == 0:
-            return None
+        for i in range(self.num_processes):
+            if not self.shared_memory[i]['is_active']:
+                continue
 
-        for _ in range(active_processes):
-            self.coms_queue.put('STEP')
+            if not self.get_legal_moves(self.shared_memory[i]['current_pos'], self.maze_data):
+                self.com_queue.put('STOP')
+                continue
 
-        for i in range(active_processes):
-            current_pos = self.shared_state[i]['current_pos']
-            self.current_pos[i] = current_pos
+            self.com_queue.put('STEP')
 
-            if current_pos not in self.visited_spaces:
-                self.visited_spaces.append(current_pos)
+        time.sleep(0.03)
 
-            if current_pos == self.maze.end_pos:
-                self.shared_state['is_solved'].set()
+        for i in range(self.num_processes):
+            if not self.shared_memory[i]['is_active']:
+                continue
+            new_pos = self.shared_memory[i]['current_pos']
 
-        return self.current_pos
+            self.current_pos[i] = new_pos
+            if new_pos not in self.visited_spaces:
+                self.visited_spaces.append(new_pos)
+            if new_pos not in list(self.shared_memory['visited_spaces']):
+                self.shared_memory['visited_spaces'].append(new_pos)
+            if new_pos == self.maze_data['end_pos']:
+                self.shared_memory['reached_end'].set()
+
+        return self.current_pos, self._build_status_dict()
+
+
+    @staticmethod
+    @abstractmethod
+    def _step_logic(process_id: int, maze_data: dict[str, ...], shared_memory: dict[str | int, ...]) -> None:
+        """
+        Logic for choosing the next move from the current position with the assumption that
+        there is at least one legal move from the current position. Only the logic for the
+        step should be implemented here, nothing more (ex. updating visited_spaces).
+
+        Arguments:
+            process_id: ID of the process calling this function.
+            maze_data: The maze data.
+            shared_memory: Shared memory dictionary.
+
+        The function must set **shared_memory[process_id]['current_pos']** to the new position
+        after choosing the next step. The function must not manipulate with other variables
+        within the shared memory.
+        """
 
 
     def cleanup(self) -> None:
         """ Cleanup processes and resources. """
 
-        if self.processes:
-            for _ in range(len(self.processes)):
-                try:
-                    self.coms_queue.put('STOP')
-                except:
-                    pass
+        if not self.processes:
+            return
 
-            for process in self.processes:
-                process.join(timeout = 0.5)
-                if process.is_alive():
-                    process.terminate()
-                    process.join()
+        for _ in range(len(self.processes)):
+            try:
+                self.com_queue.put('STOP')
+            except:
+                pass
 
-            self.processes.clear()
+        for process in self.processes:
+            process.join(timeout = 0.5)
+            if process.is_alive():
+                process.terminate()
+                process.join()
+
+        self.processes.clear()
 
 
     def __del__(self):

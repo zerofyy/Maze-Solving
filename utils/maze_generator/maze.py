@@ -1,5 +1,4 @@
 import random
-import copy
 
 
 class Maze:
@@ -24,7 +23,7 @@ class Maze:
             end_pos: Ending position in the maze.
         """
 
-        self.maze = maze
+        self.matrix = maze
         self.size_matrix = len(maze)
         self.size = (self.size_matrix - 1) // 2
         self.set_start_end_coords(start_pos, end_pos)
@@ -88,7 +87,7 @@ class Maze:
         """ Get the maze data as a dictionary. """
 
         return {
-            'maze': self.maze,
+            'matrix': self.matrix,
             'start_pos': self.start_pos,
             'end_pos': self.end_pos,
             'wall': self.wall,
