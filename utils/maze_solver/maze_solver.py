@@ -2,14 +2,15 @@ import time
 import os
 
 from utils.maze_generator import Maze
-from .progress_tracker import ProgressTracker
+from .results_collector import ResultsCollector
 
 
 class MazeSolver:
     """ Class for running maze solving algorithms and measuring their performance. """
 
+
     def __init__(self, algorithm_args: dict[str, ...], mazes: list[dict[str, ...]], measure_performance: bool = True,
-                 wait_after_step: int | str | None = None, show_progress: str | None = 'text') -> None:
+                 wait_after_step: int | str | None = None, show_progress: str | bool = True) -> None:
         """
         Create a new instance of the MazeSolver class and set it up.
 
@@ -21,7 +22,9 @@ class MazeSolver:
         Real Time Progress Options:
             - 'text' | Show the algorithm's progress in text only.
             - 'visual' | Show the algorithm's progress in text along with a visual representation of the maze.
-            - None | No real time progression display.
+            - 'detailed' | Show the algorithm's progress both in text and visually with additional statistics.
+            - True | Same as 'text'.
+            - False | No real time progression display.
 
         Arguments:
              algorithm_args: Dictionary containing algorithm settings.
@@ -61,33 +64,39 @@ class MazeSolver:
                 return int(max_steps)
 
 
-    def _solve(self, maze_args: dict[str, ...]) -> dict[str, ...]:
+    def _solve(self, maze_args: dict[str, ...]) -> dict[str, ...] | str | None:
         """ Helper function for solving a maze and collecting results. """
 
         maze = maze_args['maze']
         algorithm = self.algorithm_args['algorithm']()
-        algorithm.setup(maze = maze, **self.algorithm_args['args'])
-        max_steps = self._get_max_steps(maze, maze_args['max_steps'])
 
-        pt = ProgressTracker(algorithm, maze, max_steps, self.show_progress)
-        pt.track()
+        max_steps = self._get_max_steps(maze, maze_args['max_steps'])
+        rc = ResultsCollector(algorithm, maze, max_steps, self.show_progress)
+        rc.start('measure')
+
+        algorithm.setup(maze = maze, **self.algorithm_args['args'])
+        rc.start('track')
 
         while True:
-            if max_steps != 0 and pt.steps_taken == max_steps:
+            if max_steps != 0 and rc.results['steps_taken'] == max_steps:
                 break
 
             new_pos, status = algorithm.step()
-            pt.update()
-            pt.get_progress()
+            rc.update()
+            rc.get_progress()
 
-            if isinstance(status, dict) and status['reached_end'] or isinstance(status, bool) and status:
+            if status['reached_end']:
                 break
             if new_pos is None:
                 break
 
             self.wait_after_step()
 
-        return {}
+        if self.measure_performance:
+            rc.get_results('console', clear_console = False)
+            return rc.get_results('dict')
+
+        return None
 
 
     def run(self) -> dict[str, ...] | None:
@@ -97,8 +106,6 @@ class MazeSolver:
         Returns:
             A dictionary of statistics for the algorithm or None if measure_performance is set to False.
         """
-
-        time_taken = time.time()
 
         for maze_args in self.mazes:
             for i in range(maze_args['num_iterations']):

@@ -136,7 +136,7 @@ class BaseAlgorithmParallel(ABC):
 
         return {
             'reached_end' : self.shared_memory['reached_end'].is_set(),
-            'active_processes' : sum(1 for i in range(self.num_processes) if self.shared_memory[i]['is_active'])
+            'active_processes': sum(1 for i in range(self.num_processes) if self.shared_memory[i]['is_active'])
         }
 
 
@@ -145,10 +145,9 @@ class BaseAlgorithmParallel(ABC):
         Send a command to all active processes to take a step in the maze.
 
         Returns:
-            A tuple containing information about the new step in **new_positions | None, reached_end** format.
-            The first element is a list of tuples with the coordinates of the new positions or None if there
-            are no legal moves. The second element is a dictionary containing information about the processes
-            and whether the end of the maze has been reached.
+            A tuple containing information about taking steps in the maze. The first element is a list of new
+            positions for each process or None if no steps were taken. The second element is a dictionary with
+            status information about each process, including whether the end of the maze has been reached.
         """
 
         status = self._build_status_dict()

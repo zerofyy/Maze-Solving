@@ -57,19 +57,27 @@ class BaseAlgorithmSequential(ABC):
         ]
 
 
-    def step(self) -> tuple[tuple[int, int] | None, bool]:
+    def _build_status_dict(self) -> dict[str, ...]:
+        """ Helper function for creating a feedback dictionary for the step function. """
+
+        return {
+            'reached_end' : self.is_at_end()
+        }
+
+
+    def step(self) -> tuple[tuple[int, int] | None, dict[str, ...]]:
         """
         Take a step in the maze.
 
         Returns:
-            A tuple containing information about the new step in **new_position | None, reached_end** format.
-            The first element is a tuple with the coordinates of the new position or None if there are no legal moves.
-            The second element is a boolean representing whether the end of the maze has been reached.
+            A tuple containing information about taking a step in the maze. The first element is a tuple of the
+            new position coordinates or None if a move wasn't made. The second element is a dictionary with
+            status information, including whether the end of the maze has been reached.
         """
 
         legal_moves = self.get_legal_moves()
         if not legal_moves:
-            return None, self.is_at_end()
+            return None, self._build_status_dict()
 
         new_pos = self._step_logic()
 
@@ -77,7 +85,7 @@ class BaseAlgorithmSequential(ABC):
         if new_pos not in self.visited_spaces:
             self.visited_spaces.append(new_pos)
 
-        return new_pos, self.is_at_end()
+        return new_pos, self._build_status_dict()
 
 
     @abstractmethod

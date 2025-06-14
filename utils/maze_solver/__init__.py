@@ -1,2 +1,2 @@
 from .maze_solver import *
-from .progress_tracker import *
+from .results_collector import *
