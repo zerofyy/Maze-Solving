@@ -34,8 +34,8 @@ class WandererParallel(BaseAlgorithmParallel):
     @staticmethod
     def _step_logic(pid: int, maze_data: dict[str, ...], memory: dict[str | int, ...]) -> tuple[int, int]:
         random.seed(time.time() + pid)
-
-        legal_moves = BaseAlgorithmParallel.get_legal_moves(memory[pid]['current_pos'], maze_data)
+        local_memory = dict(memory[pid])
+        legal_moves = WandererParallel.get_legal_moves(local_memory['current_pos'], maze_data)
 
         if memory['confused']:
             return random.choice(legal_moves)
@@ -43,15 +43,15 @@ class WandererParallel(BaseAlgorithmParallel):
         unvisited_spaces = [move for move in legal_moves if move not in memory['visited_pos']]
         if unvisited_spaces:
             move = random.choice(unvisited_spaces)
+            memory[pid]['breadcrumbs'].append(move)
 
-        elif len(memory[pid]['breadcrumbs']) == 0:
-            move = random.choice(legal_moves)
+        elif len(local_memory['breadcrumbs']) <= 1:
+            move = random.choice([memory[i]['current_pos'] for i in dict(memory) if isinstance(i, int) and i != pid])
 
         else:
             memory[pid]['breadcrumbs'].pop()
             return memory[pid]['breadcrumbs'][-1]
 
-        memory[pid]['breadcrumbs'].append(move)
         return move
 
 

@@ -31,11 +31,11 @@ class BaseAlgorithmParallel(ABC):
         self.processes = []
 
         self.manager = mp.Manager()
-        self.memory = self.manager.dict()
-
-        self.memory['visited_pos'] = self.manager.list([maze.start_pos])
-        self.memory['reached_end'] = False
-        self.memory['lock'] = self.manager.Lock()
+        self.memory = self.manager.dict({
+            'visited_pos' : self.manager.list([maze.start_pos]),
+            'reached_end' : False,
+            'lock' : self.manager.Lock()
+        })
 
         for i in range(self.num_processes):
             self.memory[i] = self.manager.dict({
@@ -146,14 +146,17 @@ class BaseAlgorithmParallel(ABC):
         """
 
         status = []
-        for pid in range(self.num_processes):
-            status.append((f'Process {pid}          ',
-                           '[lg]Active[rs]' if self.memory[pid]['is_active'] else '[lr]Inactive[rs]'))
-            status.append(('[lr]|[rs] Current Position ', f'[ly]{self.memory[pid]["current_pos"]}[rs]'))
-            status.append(('[lr]|[rs] Step Flag        ',
-                           '[lg]Set[rs]' if self.memory[pid]["step_flag"] else '[lr]Unset[rs]'))
 
-            response = self.memory[pid]["response"]
+        for pid in range(self.num_processes):
+            local_memory = dict(self.memory[pid])
+
+            status.append((f'Process {pid}          ',
+                           '[lg]Active[rs]' if local_memory['is_active'] else '[lr]Inactive[rs]'))
+            status.append(('[lr]|[rs] Current Position ', f'[ly]{local_memory["current_pos"]}[rs]'))
+            status.append(('[lr]|[rs] Step Flag        ',
+                           '[lg]Set[rs]' if local_memory["step_flag"] else '[lr]Unset[rs]'))
+
+            response = local_memory["response"]
             if response is None:
                 status.append(('[lr]|[rs] Response         ', '[lr]No Response[rs]'))
             else:
@@ -171,16 +174,18 @@ class BaseAlgorithmParallel(ABC):
         """ Internal process logic - keep processes alive and handle communication. """
 
         while True:
-            if not memory[pid]['is_active']:
-                memory[pid]['response'] = 'Terminated'
+            local_memory = dict(memory[pid])
+
+            if not local_memory['is_active']:
+                local_memory['response'] = 'Terminated'
                 break
 
             if memory['reached_end']:
-                memory[pid]['is_active'] = False
-                memory[pid]['response'] = 'Ended'
+                local_memory['is_active'] = False
+                local_memory['response'] = 'Ended'
                 break
 
-            if not memory[pid]['step_flag']:
+            if not local_memory['step_flag']:
                 continue
 
             memory[pid]['step_flag'] = False
@@ -205,6 +210,7 @@ class BaseAlgorithmParallel(ABC):
         active_processes = 0
 
         for pid in range(self.num_processes):
+
             if not self.memory[pid]['is_active']:
                 continue
 
@@ -214,8 +220,10 @@ class BaseAlgorithmParallel(ABC):
                 self.memory[pid]['response'] = 'Waiting'
             else:
                 self.memory[pid]['step_flag'] = False
+                self.memory[pid]['is_active'] = False
 
         time_passed = time.time()
+        sleep_time, sleep_max = 0.001, 0.5
         while True:
             responses = sum(1 if self.memory[pid]['response'] == 'Stepped' else 0
                             for pid in range(self.num_processes))
@@ -223,10 +231,13 @@ class BaseAlgorithmParallel(ABC):
             if responses == active_processes:
                 break
 
-            if time.time() - time_passed >= 0.1:
+            if time.time() - time_passed >= sleep_max:
                 if responses >= 1:
                     break
                 return None, self.memory['reached_end']
+
+            time.sleep(sleep_time)
+            sleep_time *= 1.5
 
         return tuple(self.memory[pid]['current_pos'] for pid in range(self.num_processes)), self.memory['reached_end']
 
@@ -278,7 +289,7 @@ class BaseAlgorithmParallel(ABC):
 
         memory[pid]['current_pos'] = new_pos
 
-        if BaseAlgorithmParallel.is_at_end(memory[pid]['current_pos'], maze_data):
+        if BaseAlgorithmParallel.is_at_end(new_pos, maze_data):
             memory['reached_end'] = True
 
         with memory['lock']:

@@ -21,8 +21,8 @@ if __name__ == '__main__':
 
     mazes = [
         {
-            'maze' : MazeGenerator.generate(4, 'middle', 'random_corner'),
-            'max_steps' : 'auto',
+            'maze' : MazeGenerator.generate(30, 'middle', 'random_corner'),
+            'max_steps' : 'unlimited',
             'num_iterations' : 1
         }
     ]

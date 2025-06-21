@@ -36,6 +36,12 @@ class ResultsCollector:
         """
 
         os.system('')  # Required for coloring to work.
+        try:
+            self.console_width = os.get_terminal_size().columns + 600
+            self.console_height = os.get_terminal_size().lines
+        except:
+            self.console_width = 200
+            self.console_height = 50
 
         self.algorithm = algorithm
         self.maze = maze
@@ -214,19 +220,20 @@ class ResultsCollector:
             space_visited = f'{Back.li_yellow}   {Rest.all}'
 
         display = ''
+        current_pos = self.algorithm.get_current_pos()
+        visited_pos = self.algorithm.get_visited_pos()
         for row in range(self.maze.size_matrix):
             for col in range(self.maze.size_matrix):
 
                 space = self.maze.matrix[row][col]
-                position = self.algorithm.get_current_pos()
 
                 if space == self.maze.wall:
                     display += space_wall
-                elif (row, col) == position or isinstance(position[0], tuple) and (row, col) in position:
+                elif (row, col) == current_pos or isinstance(current_pos[0], tuple) and (row, col) in current_pos:
                     display += space_current
                 elif (row, col) == self.maze.end_pos:
                     display += space_end
-                elif (row, col) in self.algorithm.get_visited_pos():
+                elif (row, col) in visited_pos:
                     display += space_visited
                 else:
                     display += space_path
@@ -236,14 +243,13 @@ class ResultsCollector:
         return display
 
 
-    def get_progress(self, to_console: bool = True, clear_console: bool = True, coloring: bool = True) -> str | None:
+    def get_progress(self, to_console: bool = True, coloring: bool = True) -> str | None:
         """
         Get the progress of the currently running algorithm.
 
         Arguments:
             to_console: Whether to print the progress to the console.
             Setting this to False will return the progress as a string.
-            clear_console: Whether to clear the console when printing.
             coloring: Whether to use colors for the progress display.
 
         Returns:
@@ -262,14 +268,17 @@ class ResultsCollector:
         if not to_console:
             return progress
 
-        if clear_console:
-            print(f'\033[{self.maze.size_matrix ** 2}A\033[2K', end = '')
+        print('\033[H', end = '')
+        lines = ''
+        for idx, line in enumerate(progress.split('\n')):
+            if idx + 2 == self.console_height:
+                lines += '\n...'
+                break
+            lines += f'\n\033[2K{line[:self.console_width]}{Rest.all}'
+        print(lines)
 
-        print(progress)
 
-
-    def get_results(self, option: str, clear_console: bool = True,
-                    coloring: bool = True) -> str | dict[str, ...] | None:
+    def get_results(self, option: str, coloring: bool = True) -> str | dict[str, ...] | None:
         """
         Get the algorithm's results.
 
@@ -282,7 +291,6 @@ class ResultsCollector:
 
         Arguments:
              option: Where to save/send the results.
-             clear_console: Whether to clear the console if the selected option is 'console'.
              coloring: Whether to use colors if the selected option is 'console' or 'string'.
 
         Returns:
@@ -315,8 +323,8 @@ class ResultsCollector:
                   f'|| * Progress          : ~_____________ from end         ||\n' \
                   f'|| * Reached End       : ___                             ||\n' \
                   f'||-------------------------------------------------------||\n' \
-                  f'|| * Avg Memory Usage  : _______                         ||\n' \
-                  f'|| * Peak Memory Usage : _______                         ||\n' \
+                  f'|| * Avg Memory Usage  : ________                        ||\n' \
+                  f'|| * Peak Memory Usage : ________                        ||\n' \
                   f'==========================================================='
 
         results = ListMaker.fill(
@@ -350,8 +358,7 @@ class ResultsCollector:
             results = self._color(results, remove_color_codes = True)
 
         if option == 'console':
-            if clear_console:
-                print(f'\033[{self.maze.size_matrix * 2}A\033[2K', end = '')
+            print('\033[H\033[J', end = '')
             print(results)
             return
 

@@ -88,7 +88,7 @@ class MazeSolver:
             self.wait_after_step()
 
         if self.measure_performance:
-            rc.get_results('console', clear_console = False)
+            rc.get_results('console')
             return rc.get_results('dict')
 
         return None
