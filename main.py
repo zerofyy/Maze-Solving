@@ -12,16 +12,16 @@ if __name__ == '__main__':
     input('... preventing program from starting by waiting for input ...')
 
     algorithm = {
-        'algorithm' : WandererSequential,
+        'algorithm' : WandererParallel,
         'args' : {
-            # 'num_processes': 4,
+            'num_processes': 4,
             'confused' : False
         }
     }
 
     mazes = [
         {
-            'maze' : MazeGenerator.generate(10, 'random', 'random'),
+            'maze' : MazeGenerator.generate(4, 'middle', 'random_corner'),
             'max_steps' : 'auto',
             'num_iterations' : 1
         }
@@ -31,7 +31,7 @@ if __name__ == '__main__':
         algorithm_args = algorithm,
         mazes = mazes,
         measure_performance = True,
-        wait_after_step = 50,
+        wait_after_step = None,
         show_progress = 'visual'
     )
 

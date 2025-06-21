@@ -1,17 +1,19 @@
 import time
 import tracemalloc
+import os
 from sty import fg as Text, bg as Back, rs as Rest
 
 from utils.algorithms import BaseAlgorithmSequential, BaseAlgorithmParallel
 from utils.maze_generator import Maze
+from utils.assets import ListMaker
 
 
 class ResultsCollector:
-    """ Class for tracking progress and collecting results of algorithms. """
+    """ Progress tracking and collecting results of running algorithms. """
 
     total_time: float = None
-    algorithm_time: float = None
-    last_algorithm_time: float = None
+    solve_time: float = None
+    last_solve_time: float = None
 
 
     def __init__(self, algorithm: BaseAlgorithmSequential | BaseAlgorithmParallel,
@@ -32,6 +34,8 @@ class ResultsCollector:
              max_steps: The maximum number of allowed steps.
              progress_display: The type of real time progress display.
         """
+
+        os.system('')  # Required for coloring to work.
 
         self.algorithm = algorithm
         self.maze = maze
@@ -76,8 +80,8 @@ class ResultsCollector:
             self.total_time = time.time()
 
         if option == 'track':
-            self.algorithm_time = time.time()
-            self.last_algorithm_time = self.algorithm_time
+            self.solve_time = time.time()
+            self.last_solve_time = self.solve_time
             self.results['steps_taken'] = 0
 
 
@@ -88,22 +92,22 @@ class ResultsCollector:
 
         self.results['steps_taken'] += 1
 
-        self.results['solve_time'] = round(step_time - self.algorithm_time, 2)
+        self.results['solve_time'] = round(step_time - self.solve_time, 2)
         self.results['total_time'] = round(step_time - self.total_time, 2)
 
         if isinstance(self.algorithm, BaseAlgorithmSequential):
             self.results['reached_end'] = self.algorithm.is_at_end()
         else:
-            self.results['reached_end'] = self.algorithm.shared_memory['reached_end'].is_set()
+            self.results['reached_end'] = self.algorithm.memory.get('reached_end')
 
-        self.results['exploration'] = len(self.algorithm.visited_spaces)
+        self.results['exploration'] = len(self.algorithm.get_visited_pos())
         self.results['sp_from_end'] = self._get_end_distance()
 
-        self.results['past_step_times'].append(step_time - self.last_algorithm_time)
+        self.results['past_step_times'].append(step_time - self.last_solve_time)
         self.results['avg_step_time'] = round(
             sum(self.results['past_step_times']) / len(self.results['past_step_times']), 2
         )
-        self.last_algorithm_time = step_time
+        self.last_solve_time = step_time
 
         current_mem, peak_mem = tracemalloc.get_traced_memory()
         self.results['past_mem_usages'].append(current_mem / 1024 / 1024)
@@ -116,53 +120,81 @@ class ResultsCollector:
     def _get_end_distance(self, position: tuple[int, int] = None) -> int:
         """ Helper function for calculating an approximate distance from the end of the maze. """
 
-        position = position if position else self.algorithm.current_pos
+        position = position if position else self.algorithm.get_current_pos()
 
-        if isinstance(position, tuple):
+        if isinstance(position[0], int):
             return int(
                 abs(position[0] - self.maze.end_pos[0]) +
                 abs(position[1] - self.maze.end_pos[1])
             )
 
         return min(
-            [self._get_end_distance(pos) for pos in position if pos is not None]
+            [self._get_end_distance(pos) for pos in position]
         )
+
+
+    @staticmethod
+    def _color(text, remove_color_codes: bool = False) -> str:
+        """ Helper function for coloring text. """
+
+        colors = {'[lb]': Text.li_blue, '[rs]': Rest.all, '[ly]': Text.li_yellow,
+                  '[lc]': Text.li_cyan, '[lg]': Text.li_green, '[lr]': Text.li_red}
+
+        if remove_color_codes:
+            for tag, color in colors.items():
+                text = text.replace(tag, '')
+        else:
+            for tag, color in colors.items():
+                text = text.replace(tag, color)
+
+        return text
+
 
 
     def _get_text_display(self, coloring: bool) -> str:
         """ Helper function for generating the text progress display. """
 
-        if not coloring:
-            progress = f'Total Time: {self.results["total_time"]} sec | ' \
-                       f'Solve Time: {self.results["solve_time"]} sec | ' \
-                       f'Steps: {self.results["steps_taken"]} / {self.max_steps} | ' \
-                       f'Explored: {self.results["exploration"]} spaces | ' \
-                       f'Progress: ~{self.results["sp_from_end"]} spaces from end'
+        total_time = f'{round(self.results["total_time"] / 60, 2)} min' \
+            if self.results['total_time'] > 60 else f'{self.results["total_time"]} sec'
+        solve_time = f'{round(self.results["solve_time"] / 60, 2)} min' \
+            if self.results['solve_time'] > 60 else f'{self.results["solve_time"]} sec'
 
-        else:
-            progress = f'Total Time: {Text.li_blue}{self.results["total_time"]}{Rest.all} sec | ' \
-                       f'Solve Time: {Text.li_blue}{self.results["solve_time"]}{Rest.all} sec | ' \
-                       f'Steps: {Text.li_cyan}{self.results["steps_taken"]}{Rest.all} / ' \
-                                           f'{Text.li_cyan}{self.max_steps}{Rest.all} | ' \
-                       f'Explored: {Text.li_yellow}{self.results["exploration"]}{Rest.all} spaces | ' \
-                       f'Progress: ~{Text.li_green}{self.results["sp_from_end"]}{Rest.all} spaces from end'
+        display = f'Time Passed: __________ | Solve Time: __________  | Avg Step Time: ______ sec\n' \
+                  f'Steps: ______ / ______  | Explored: _____________ | Progress: _____________ from end\n' \
+                  f'Avg Mem Usage: _______  | Peak Mem Usage: _______ | ________________________________\n' \
+                  f'[lr]===========================================================================================[rs]'
+
+        display = ListMaker.fill(
+            text = display,
+            info = [
+                (f'[lb]{total_time}[rs]', 'left'),
+                (f'[lb]{solve_time}[rs]', 'left'),
+                (f'[lb]{self.results["avg_step_time"]}[rs]', 'left'),
+                (f'[ly]{self.results["steps_taken"]}[rs]', 'right'),
+                (f'[ly]{self.max_steps}[rs]', 'left'),
+                (f'[ly]{self.results["exploration"]} spaces[rs]', 'left'),
+                (f'[ly]{self.results["sp_from_end"]} spaces[rs]', 'right'),
+                (f'[lc]{self.results["avg_mem_usage"]} MB[rs]', 'left'),
+                (f'[lc]{self.results["top_mem_usage"]} MB[rs]', 'left'),
+                (f'[lg]{self.algorithm.__class__.__name__}[rs]', 'left')
+            ],
+            dir_offset = 8
+        )
 
         if self.progress_display == 'detailed':
-            if not coloring:
-                progress += f' | ' \
-                            f'Solved: {self.results["reached_end"]} | ' \
-                            f'Average Step Time: {self.results["avg_step_time"]} sec | ' \
-                            f'Average Mem Usage: {self.results["avg_mem_usage"]} MB | ' \
-                            f'Peak Mem Usage: {self.results["top_mem_usage"]} MB'
+            display += f'\n[lr]{self.algorithm.__class__.__name__} Details[rs]'
+            for key, val in self.algorithm.get_status():
+                display += f'\n[lr]*[rs] {key}: {val}'
+            display += \
+                f'\n[lr]===========================================================================================[rs]'
 
-            else:
-                progress += f' | ' \
-                            f'Solved: {Text.li_red}{self.results["reached_end"]}{Rest.all} | ' \
-                            f'Average Step Time: {Text.li_magenta}{self.results["avg_step_time"]}{Rest.all} sec | ' \
-                            f'Average Mem Usage: {Text.li_magenta}{self.results["avg_mem_usage"]}{Rest.all} MB | ' \
-                            f'Peak Mem Usage: {Text.li_magenta}{self.results["top_mem_usage"]}{Rest.all} MB'
+        if coloring:
+            display = display.replace('|', f'{Text.li_red}|{Rest.all}')
+            display = self._color(display)
+        else:
+            display = self._color(display, remove_color_codes = True)
 
-        return progress
+        return display
 
 
     def _get_visual_display(self, coloring: bool) -> str:
@@ -181,28 +213,27 @@ class ResultsCollector:
             space_end = f'{Back.li_red}   {Rest.all}'
             space_visited = f'{Back.li_yellow}   {Rest.all}'
 
-        maze_display = ''
+        display = ''
         for row in range(self.maze.size_matrix):
             for col in range(self.maze.size_matrix):
 
                 space = self.maze.matrix[row][col]
+                position = self.algorithm.get_current_pos()
 
                 if space == self.maze.wall:
-                    maze_display += space_wall
-                elif (row, col) == self.algorithm.current_pos \
-                        or isinstance(self.algorithm.current_pos, list) \
-                        and (row, col) in self.algorithm.current_pos:
-                    maze_display += space_current
+                    display += space_wall
+                elif (row, col) == position or isinstance(position[0], tuple) and (row, col) in position:
+                    display += space_current
                 elif (row, col) == self.maze.end_pos:
-                    maze_display += space_end
-                elif (row, col) in self.algorithm.visited_spaces:
-                    maze_display += space_visited
+                    display += space_end
+                elif (row, col) in self.algorithm.get_visited_pos():
+                    display += space_visited
                 else:
-                    maze_display += space_path
+                    display += space_path
 
-            maze_display += '\n'
+            display += '\n'
 
-        return maze_display
+        return display
 
 
     def get_progress(self, to_console: bool = True, clear_console: bool = True, coloring: bool = True) -> str | None:
@@ -232,7 +263,7 @@ class ResultsCollector:
             return progress
 
         if clear_console:
-            print(f'\033[{self.maze.size_matrix * 2}A\033[2K', end = '')
+            print(f'\033[{self.maze.size_matrix ** 2}A\033[2K', end = '')
 
         print(progress)
 
@@ -261,64 +292,62 @@ class ResultsCollector:
         if option == 'dict':
             return self.results
 
-        algorithm_name = self.algorithm.__class__.__name__
-        bar = '=' * len(algorithm_name)
+        total_time = f'{round(self.results["total_time"] / 60, 2)} min' \
+            if self.results['total_time'] > 60 else f'{self.results["total_time"]} sec'
+        solve_time = f'{round(self.results["solve_time"] / 60, 2)} min' \
+            if self.results['solve_time'] > 60 else f'{self.results["solve_time"]} sec'
+        setup_time = round(self.results['total_time'] - self.results['solve_time'], 2)
+        reached_end = f'[lg]Yes[rs]' if self.results['reached_end'] else '[lr]No[rs]'
+
+        results = f'===========================================================\n' \
+                  f'|| ________________                                      ||\n' \
+                  f'|| * Maze Size         : ______ ( ______ x ______ )      ||\n' \
+                  f'|| * Start-End         : ______________ - ______________ ||\n' \
+                  f'===========================================================\n' \
+                  f'|| ___________________________________________________   ||\n' \
+                  f'|| * Setup Time        : __________                      ||\n' \
+                  f'|| * Solve Time        : __________                      ||\n' \
+                  f'|| * Total Time        : __________                      ||\n' \
+                  f'|| * Avg Step Time     : __________                      ||\n' \
+                  f'||-------------------------------------------------------||\n' \
+                  f'|| * Steps             : ______ / ______                 ||\n' \
+                  f'|| * Explored          : _____________                   ||\n' \
+                  f'|| * Progress          : ~_____________ from end         ||\n' \
+                  f'|| * Reached End       : ___                             ||\n' \
+                  f'||-------------------------------------------------------||\n' \
+                  f'|| * Avg Memory Usage  : _______                         ||\n' \
+                  f'|| * Peak Memory Usage : _______                         ||\n' \
+                  f'==========================================================='
+
+        results = ListMaker.fill(
+            text = results,
+            info = [
+                (f'[lr]Maze Information[rs]', 'left'),
+                (f'[lc]{self.maze.size}[rs]', 'left'),
+                (f'[lc]{self.maze.size_matrix}[rs]', 'right'),
+                (f'[lc]{self.maze.size_matrix}[rs]', 'left'),
+                (f'[lg]{self.maze.start_pos}[rs]', 'right'),
+                (f'[lr]{self.maze.end_pos}[rs]', 'left'),
+                (f'[lr]{self.algorithm.__class__.__name__} Information[rs]', 'left'),
+                (f'[lb]{setup_time} sec[rs]', 'left'),
+                (f'[lb]{solve_time}[rs]', 'left'),
+                (f'[lb]{total_time}[rs]', 'left'),
+                (f'[lb]{self.results["avg_step_time"]} sec[rs]', 'left'),
+                (f'[ly]{self.results["steps_taken"]}[rs]', 'right'),
+                (f'[ly]{self.max_steps}[rs]', 'left'),
+                (f'[ly]{self.results["exploration"]} spaces[rs]', 'left'),
+                (f'[ly]{self.results["sp_from_end"]} spaces[rs]', 'left'),
+                (reached_end, 'left'),
+                (f'[lc]{self.results["avg_mem_usage"]} MB[rs]', 'left'),
+                (f'[lc]{self.results["top_mem_usage"]} MB[rs]', 'left')
+            ],
+            dir_offset = 8)
 
         if coloring and (option == 'console' or option == 'string'):
-            results = f'  MAZE INFORMATION \n' \
-                      f'{Text.yellow}{bar}{Rest.all} \n' \
-                      f'{Text.yellow}*{Rest.all} Maze Size        : {Text.li_magenta}{self.maze.size}{Rest.all} ' \
-                             f'( {Text.li_magenta}{self.maze.size_matrix}x{self.maze.size_matrix}{Rest.all} ) \n' \
-                      f'{Text.yellow}*{Rest.all} Start Position   : {Text.li_green}{self.maze.start_pos}{Rest.all} \n' \
-                      f'{Text.yellow}*{Rest.all} End Position     : {Text.li_red}{self.maze.end_pos}{Rest.all} \n' \
-                      f'{Text.yellow}{bar}{Rest.all} \n' \
-                      f'\n' \
-                      f'  {algorithm_name.upper()} RESULTS \n' \
-                      f'{Text.yellow}{bar}{Rest.all} \n' \
-                      f'{Text.yellow}*{Rest.all} Total Time Taken : {Text.li_blue}{self.results["total_time"]}' \
-                             f'{Rest.all} sec \n' \
-                      f'{Text.yellow}*{Rest.all} Solve Time Taken : {Text.li_blue}{self.results["solve_time"]}' \
-                             f'{Rest.all} sec \n' \
-                      f'\n' \
-                      f'{Text.yellow}*{Rest.all} Steps Taken      : {Text.li_cyan}{self.results["steps_taken"]}' \
-                             f'{Rest.all} / {Text.li_cyan}{self.max_steps}{Rest.all} \n' \
-                      f'{Text.yellow}*{Rest.all} Explored         : {Text.li_yellow}{self.results["exploration"]}' \
-                             f'{Rest.all} unique spaces \n' \
-                      f'{Text.yellow}*{Rest.all} Spaces From End  : {Text.li_green}~{self.results["sp_from_end"]}' \
-                             f'{Rest.all} \n' \
-                      f'{Text.yellow}*{Rest.all} Reached End      : {Text.li_red}{self.results["reached_end"]}' \
-                             f'{Rest.all} \n' \
-                      f'\n' \
-                      f'{Text.yellow}*{Rest.all} Average Step Time: {Text.li_magenta}{self.results["avg_step_time"]}' \
-                             f'{Rest.all} sec \n' \
-                      f'{Text.yellow}*{Rest.all} Average Mem Usage: {Text.li_magenta}{self.results["avg_mem_usage"]}' \
-                             f'{Rest.all} MB \n' \
-                      f'{Text.yellow}*{Rest.all} Peak Mem Usage   : {Text.li_magenta}{self.results["top_mem_usage"]}' \
-                             f'{Rest.all} MB \n' \
-                      f'{Text.yellow}{bar}{Rest.all}'
-
+            results = results.replace('*', f'{Text.li_red}*{Rest.all}')
+            results = self._color(results)
         else:
-            results = f'  MAZE INFORMATION \n' \
-                      f'{bar} \n' \
-                      f'* Maze Size        : {self.maze.size} ( {self.maze.size_matrix}x{self.maze.size_matrix} ) \n' \
-                      f'* Start Position   : {self.maze.start_pos} \n' \
-                      f'* End Position     : {self.maze.end_pos} \n' \
-                      f'{bar} \n' \
-                      f'\n' \
-                      f'  {algorithm_name.upper()} RESULTS \n' \
-                      f'{bar} \n' \
-                      f'* Total Time Taken : {self.results["total_time"]} sec \n' \
-                      f'* Solve Time Taken : {self.results["solve_time"]} sec \n' \
-                      f'\n' \
-                      f'* Steps Taken      : {self.results["steps_taken"]} / {self.max_steps} \n' \
-                      f'* Explored         : {self.results["exploration"]} unique spaces \n' \
-                      f'* Spaces From End  : ~{self.results["sp_from_end"]} \n' \
-                      f'* Reached End      : {self.results["reached_end"]} \n' \
-                      f'\n' \
-                      f'* Average Step Time: {self.results["avg_step_time"]} sec \n' \
-                      f'* Average Mem Usage: {self.results["avg_mem_usage"]} MB \n' \
-                      f'* Peak Mem Usage   : {self.results["top_mem_usage"]} MB \n' \
-                      f'{bar}'
+            results = self._color(results, remove_color_codes = True)
 
         if option == 'console':
             if clear_console:

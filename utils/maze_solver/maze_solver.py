@@ -1,12 +1,11 @@
 import time
-import os
 
 from utils.maze_generator import Maze
 from .results_collector import ResultsCollector
 
 
 class MazeSolver:
-    """ Class for running maze solving algorithms and measuring their performance. """
+    """ Simplified set up, execution, and performance measurements of maze solving algorithms. """
 
 
     def __init__(self, algorithm_args: dict[str, ...], mazes: list[dict[str, ...]], measure_performance: bool = True,
@@ -34,8 +33,6 @@ class MazeSolver:
              show_progress: The type of real time progress to display when running the algorithm.
         """
 
-        os.system('')  # Required for the progress display colors to work.
-
         self.algorithm_args = algorithm_args
         self.mazes = mazes
         self.measure_performance = measure_performance
@@ -55,7 +52,7 @@ class MazeSolver:
 
         match max_steps:
             case 'auto':
-                return maze.size_matrix ** 2
+                return maze.size ** 2 * 2
             case 'fewest':
                 return abs(maze.start_pos[0] - maze.end_pos[0]) + abs(maze.start_pos[1] - maze.end_pos[1]) + maze.size
             case 'unlimited':
@@ -81,13 +78,11 @@ class MazeSolver:
             if max_steps != 0 and rc.results['steps_taken'] == max_steps:
                 break
 
-            new_pos, status = algorithm.step()
+            new_pos, reached_end = algorithm.step()
             rc.update()
             rc.get_progress()
 
-            if status['reached_end']:
-                break
-            if new_pos is None:
+            if new_pos is None or reached_end:
                 break
 
             self.wait_after_step()

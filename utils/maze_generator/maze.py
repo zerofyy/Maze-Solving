@@ -2,12 +2,12 @@ import random
 
 
 class Maze:
-    """ Class representing a generated maze. """
+    """ Randomly generated maze using a modified version of Prim's algorithm. """
 
     start_pos: tuple[int, int] = None
     end_pos: tuple[int, int] = None
-    wall: int = None
-    path: int = None
+    wall: int = None  # Set to 0 by the MazeGenerator
+    path: int = None  # Set to 1 by the MazeGenerator
 
 
     def __init__(self, maze: list[list[int]], start_pos: str, end_pos: str) -> None:
@@ -26,12 +26,12 @@ class Maze:
         self.matrix = maze
         self.size_matrix = len(maze)
         self.size = (self.size_matrix - 1) // 2
-        self.set_start_end_coords(start_pos, end_pos)
+        self.set_start_end_pos(start_pos, end_pos)
 
 
-    def set_start_end_coords(self, start_pos : str, end_pos: str) -> None:
+    def set_start_end_pos(self, start_pos : str, end_pos: str) -> None:
         """
-        Change the start and end coordinates.
+        Change the start and end position coordinates.
 
         Start & End Positions:
             top_left, top_right, bottom_left, bottom_right, middle, random, random_corner, random_any.

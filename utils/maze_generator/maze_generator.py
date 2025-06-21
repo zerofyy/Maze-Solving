@@ -4,7 +4,7 @@ from .maze import Maze
 
 
 class MazeGenerator:
-    """ Static class for generating random mazes. """
+    """ Random maze generator using a modified version of Prim's algorithm. """
 
     wall: int = 0
     path: int = 1
@@ -27,7 +27,7 @@ class MazeGenerator:
 
 
     @staticmethod
-    def _gen_maze_paths(maze: list[list[str | int]], size: int) -> list[list[str | int]]:
+    def _gen_maze_paths(maze: list[list[int]], size: int) -> list[list[int]]:
         """ Helper function for creating paths inside an empty maze. """
 
         u_limit, d_limit, l_limit, r_limit = 1, size * 2 - 1, 3, size * 2 - 1
@@ -100,7 +100,7 @@ class MazeGenerator:
             end_pos: Ending position in the maze.
 
         Returns:
-            A randomly generated maze as an object.
+            A Maze object.
         """
 
         maze = MazeGenerator._gen_empty_maze(size)

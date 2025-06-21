@@ -26,39 +26,49 @@ class WandererParallel(BaseAlgorithmParallel):
         """
 
         super().setup(maze, num_processes)
-        self.shared_memory['confused'] = confused
-        self.shared_memory['visited_spaces_weights'] = self.manager.dict()
+        for pid in range(self.num_processes):
+            self.memory[pid]['breadcrumbs'] = self.manager.list([maze.start_pos])
+        self.memory['confused'] = confused
 
 
     @staticmethod
-    def _step_logic(process_id: int, maze_data: dict[str, ...], shared_memory: dict[str | int, ...]) -> None:
-        state = shared_memory[process_id]
-        current_pos = state['current_pos']
-        vsw = dict(shared_memory['visited_spaces_weights'])
-        legal_moves = BaseAlgorithmParallel.get_legal_moves(current_pos, maze_data)
+    def _step_logic(pid: int, maze_data: dict[str, ...], memory: dict[str | int, ...]) -> tuple[int, int]:
+        random.seed(time.time() + pid)
 
-        random.seed(time.time() + process_id)
+        legal_moves = BaseAlgorithmParallel.get_legal_moves(memory[pid]['current_pos'], maze_data)
 
-        if shared_memory['confused']:
-            state['current_pos'] = random.choice(legal_moves)
-            return
+        if memory['confused']:
+            return random.choice(legal_moves)
 
-        for space in vsw:
-            if space in legal_moves:
-                legal_moves.remove(space)
+        unvisited_spaces = [move for move in legal_moves if move not in memory['visited_pos']]
+        if unvisited_spaces:
+            move = random.choice(unvisited_spaces)
 
-        if legal_moves:
-            new_pos = random.choice(legal_moves)
+        elif len(memory[pid]['breadcrumbs']) == 0:
+            move = random.choice(legal_moves)
+
         else:
-            new_pos = min(BaseAlgorithmParallel.get_legal_moves(current_pos, maze_data),
-                          key = vsw.get)
+            memory[pid]['breadcrumbs'].pop()
+            return memory[pid]['breadcrumbs'][-1]
 
-        if new_pos not in vsw:
-            shared_memory['visited_spaces_weights'][new_pos] = 1
-        else:
-            shared_memory['visited_spaces_weights'][new_pos] += 1
+        memory[pid]['breadcrumbs'].append(move)
+        return move
 
-        state['current_pos'] = new_pos
+
+    def get_status(self) -> list[tuple[str, ...]]:
+        status = super().get_status()
+
+        offset = 0
+        for pid in range(self.num_processes):
+            status.insert(
+                4 * (pid + 1) + offset,
+                ('[lr]|[rs] Breadcrumbs      ', f'[ly]{len(self.memory[pid]["breadcrumbs"])}[rs]')
+            )
+            offset += 1
+
+        status.append(('Confused           ', '[lg]Yes[rs]' if self.memory['confused'] else '[lr]No[rs]'))
+
+        return status
 
 
 __all__ = ['WandererParallel']

@@ -6,18 +6,14 @@ from utils.maze_generator import Maze
 
 
 class BaseAlgorithmParallel(ABC):
-    """ Abstract class representing a parallel maze solving algorithm. """
+    """ Abstract representation of a parallel maze solving algorithm. """
 
+    maze: Maze = None
     maze_data: dict[str, ...] = None
-    current_pos: list[tuple[int, int]] = None
-    visited_spaces: list[tuple[int, int]] = None
-
     num_processes: int = None
     processes: list[mp.Process] = None
-
     manager: mp.Manager = None
-    shared_memory: dict[str | int, ...] = None
-    com_queue: mp.Queue = None
+    memory: dict[str | int, ...] = None
 
 
     def setup(self, maze: Maze, num_processes: int = 4) -> None:
@@ -29,68 +25,69 @@ class BaseAlgorithmParallel(ABC):
             num_processes: Number of processes, defaults to 4 or less.
         """
 
+        self.maze = maze
         self.maze_data = maze.get_maze_data()
         self.num_processes = min(num_processes, mp.cpu_count()) if num_processes else min(4, mp.cpu_count())
-        self.current_pos = [maze.start_pos for _ in range(self.num_processes)]
-        self.visited_spaces = [maze.start_pos]
+        self.processes = []
 
         self.manager = mp.Manager()
-        self.shared_memory = self.manager.dict()
-        self.shared_memory['reached_end'] = self.manager.Event()
-        self.shared_memory['visited_spaces'] = self.manager.list([maze.start_pos])
-        self.shared_memory['step_logic'] = self._step_logic
+        self.memory = self.manager.dict()
+
+        self.memory['visited_pos'] = self.manager.list([maze.start_pos])
+        self.memory['reached_end'] = False
+        self.memory['lock'] = self.manager.Lock()
 
         for i in range(self.num_processes):
-            self.shared_memory[i] = self.manager.dict({
+            self.memory[i] = self.manager.dict({
                 'current_pos' : maze.start_pos,
-                'is_active' : True
+                'is_active' : True,
+                'step_flag' : False,
+                'response' : None
             })
 
-        self.processes = []
-        self.com_queue = mp.Queue()
         self._start_processes()
 
 
     def _start_processes(self) -> None:
-        """ Helper function for starting all processes. """
+        """ Start all processes. """
 
-        for i in range(self.num_processes):
+        for pid in range(self.num_processes):
             process = mp.Process(
                 target = self._process_step,
-                args = (i, self.maze_data, self.shared_memory, self.com_queue)
+                args = (pid, self.maze.get_maze_data(), self.memory, self._step_logic, self._after_step)
             )
             process.start()
             self.processes.append(process)
 
 
     @staticmethod
-    def is_at_end(position: tuple[int, int], maze_data: dict[str, ...]) -> bool:
+    def is_at_end(curr_position: tuple[int, int], maze_data: dict[str, ...]) -> bool:
         """
-        Check whether the current position matches the end position.
+        Check whether the algorithm's current position matches the maze end position.
 
         Arguments:
-            position: A specific position to check for legal moves.
+            curr_position: The algorithm's current position.
             maze_data: The maze data.
         """
 
-        return position == maze_data['end_pos']
+        return curr_position == maze_data['end_pos']
 
 
     @staticmethod
     def get_legal_moves(position: tuple[int, int], maze_data: dict[str, ...]) -> list[tuple[int, int]]:
         """
-        Get a list of legal moves (coordinates) from the current position.
+        Get a list of legal moves.
 
         Arguments:
             position: A specific position to check for legal moves.
             maze_data: The maze data.
+
+        Returns:
+            A list of new positions that can be visited from the specified position. If no legal moves
+            exist, the list will be empty.
         """
 
-        if position is None:
-            return []
-
-        if BaseAlgorithmParallel.is_at_end(position, maze_data) \
-                or maze_data['matrix'][position[0]][position[1]] == maze_data['wall']:
+        if BaseAlgorithmParallel.is_at_end(position, maze_data):
             return []
 
         check_moves = [
@@ -107,111 +104,193 @@ class BaseAlgorithmParallel(ABC):
         ]
 
 
-    @staticmethod
-    def _process_step(process_id: int, maze_data: dict[str, ...],
-                      shared_memory: dict[str | int, ...], com_queue: mp.Queue) -> None:
-        """ Static helper function for taking steps in the maze. """
-
-        while True:
-
-            if shared_memory['reached_end'].is_set() or not shared_memory[process_id]['is_active']:
-                break
-
-            try:
-                command = com_queue.get(timeout = 0.5)
-                if command == 'STOP':
-                    shared_memory[process_id]['current_pos'] = None
-                    break
-
-                if command != 'STEP':
-                    continue
-
-                shared_memory['step_logic'](process_id, maze_data, shared_memory)
-            except:
-                pass
-
-
-    def _build_status_dict(self) -> dict[str, ...]:
-        """ Helper function for creating a feedback dictionary for the step function. """
-
-        return {
-            'reached_end' : self.shared_memory['reached_end'].is_set(),
-            'active_processes': sum(1 for i in range(self.num_processes) if self.shared_memory[i]['is_active'])
-        }
-
-
-    def step(self) -> tuple[list[tuple[int, int]] | None, dict[str, ...]]:
+    def get_current_pos(self) -> list[tuple[int, int]]:
         """
-        Send a command to all active processes to take a step in the maze.
+        Get the current position of each process from the algorithm.
+
+        This function should be overwritten if the `'current_pos'` keys in the algorithm's memory are modified.
+        Regardless of the modifications, the return type must remain the same.
 
         Returns:
-            A tuple containing information about taking steps in the maze. The first element is a list of new
-            positions for each process or None if no steps were taken. The second element is a dictionary with
-            status information about each process, including whether the end of the maze has been reached.
+            The coordinates of the current position in the maze.
         """
 
-        status = self._build_status_dict()
-        if status['active_processes'] == 0 or status['reached_end']:
-            return None, status
+        return [self.memory[pid]['current_pos'] for pid in range(self.num_processes)]
 
-        for i in range(self.num_processes):
-            if not self.shared_memory[i]['is_active']:
+
+    def get_visited_pos(self) -> set[tuple[int, int]]:
+        """
+        Get all the positions previously visited by the algorithm.
+
+        This function should be overwritten if the `'visited_pos'` key in the algorithm's memory is modified.
+        Regardless of the modifications, the return type must remain the same.
+
+        Returns:
+            A set of coordinates of all visited positions in the maze.
+        """
+
+        return set(self.memory['visited_pos'])
+
+
+    def get_status(self) -> list[tuple[str, ...]]:
+        """
+        Get information about the algorithm's status.
+
+        By default, this function returns information from the algorithm's memory. If the algorithm's memory
+        has been modified - this function should be overwritten to include those modifications in the status
+        dictionary (in an appropriate format for real time displays). Regardless of the modifications, the
+        return type of this function must remain the same.
+
+        Returns:
+            A list with status information.
+        """
+
+        status = []
+        for pid in range(self.num_processes):
+            status.append((f'Process {pid}          ',
+                           '[lg]Active[rs]' if self.memory[pid]['is_active'] else '[lr]Inactive[rs]'))
+            status.append(('[lr]|[rs] Current Position ', f'[ly]{self.memory[pid]["current_pos"]}[rs]'))
+            status.append(('[lr]|[rs] Step Flag        ',
+                           '[lg]Set[rs]' if self.memory[pid]["step_flag"] else '[lr]Unset[rs]'))
+
+            response = self.memory[pid]["response"]
+            if response is None:
+                status.append(('[lr]|[rs] Response         ', '[lr]No Response[rs]'))
+            else:
+                status.append(('[lr]|[rs] Response         ', f'[lc]{response}[rs]'))
+
+        status.append(('Visited Positions  ', f'[ly]{len(self.memory["visited_pos"])}[rs]'))
+        status.append(('Reached End        ', '[lg]Yes[rs]' if self.memory['reached_end'] else '[lr]No[rs]'))
+
+        return status
+
+
+    @staticmethod
+    def _process_step(pid: int, maze_data: dict[str, ...], memory: dict[str | int, ...],
+                      step_logic: callable, after_step: callable) -> None:
+        """ Internal process logic - keep processes alive and handle communication. """
+
+        while True:
+            if not memory[pid]['is_active']:
+                memory[pid]['response'] = 'Terminated'
+                break
+
+            if memory['reached_end']:
+                memory[pid]['is_active'] = False
+                memory[pid]['response'] = 'Ended'
+                break
+
+            if not memory[pid]['step_flag']:
                 continue
 
-            if not self.get_legal_moves(self.shared_memory[i]['current_pos'], self.maze_data):
-                self.com_queue.put('STOP')
+            memory[pid]['step_flag'] = False
+            memory[pid]['response'] = 'Stepping'
+            new_pos = step_logic(pid, maze_data, memory)
+            after_step(pid, new_pos, maze_data, memory)
+            memory[pid]['response'] = 'Stepped'
+
+
+    def step(self) -> tuple[tuple[tuple[int, int], ...] | None, bool]:
+        """
+        Take a step in the maze.
+
+        Returns:
+            The new positions after each process takes a step or None if no steps were taken, and a boolean
+            value representing whether the end of the maze has been reached.
+        """
+
+        if self.memory['reached_end']:
+            return None, True
+
+        active_processes = 0
+
+        for pid in range(self.num_processes):
+            if not self.memory[pid]['is_active']:
                 continue
 
-            self.com_queue.put('STEP')
+            if self.get_legal_moves(self.memory[pid]['current_pos'], self.maze_data):
+                active_processes += 1
+                self.memory[pid]['step_flag'] = True
+                self.memory[pid]['response'] = 'Waiting'
+            else:
+                self.memory[pid]['step_flag'] = False
 
-        time.sleep(0.03)
+        time_passed = time.time()
+        while True:
+            responses = sum(1 if self.memory[pid]['response'] == 'Stepped' else 0
+                            for pid in range(self.num_processes))
 
-        for i in range(self.num_processes):
-            if not self.shared_memory[i]['is_active']:
-                continue
-            new_pos = self.shared_memory[i]['current_pos']
+            if responses == active_processes:
+                break
 
-            self.current_pos[i] = new_pos
-            if new_pos not in self.visited_spaces:
-                self.visited_spaces.append(new_pos)
-            if new_pos not in list(self.shared_memory['visited_spaces']):
-                self.shared_memory['visited_spaces'].append(new_pos)
-            if new_pos == self.maze_data['end_pos']:
-                self.shared_memory['reached_end'].set()
+            if time.time() - time_passed >= 0.1:
+                if responses >= 1:
+                    break
+                return None, self.memory['reached_end']
 
-        return self.current_pos, self._build_status_dict()
+        return tuple(self.memory[pid]['current_pos'] for pid in range(self.num_processes)), self.memory['reached_end']
 
 
     @staticmethod
     @abstractmethod
-    def _step_logic(process_id: int, maze_data: dict[str, ...], shared_memory: dict[str | int, ...]) -> None:
+    def _step_logic(pid: int, maze_data: dict[str, ...], memory: dict[str | int, ...]) -> tuple[int, int]:
         """
-        Logic for choosing the next move from the current position with the assumption that
-        there is at least one legal move from the current position. Only the logic for the
-        step should be implemented here, nothing more (ex. updating visited_spaces).
+        Logic for choosing the next move from the current position with the assumption that there's at
+        least one legal moves from the current position.
+
+        If anything in the algorithm's memory has been modified (ex. `'current_pos', 'visited_pos'`), then
+        the logic for updating those variables should also be implemented here or within the `_after_step()`
+        function. Additionally, if memory keys/values are modified, then the relevant functions
+        (`get_current_pos()`, `get_visited_pos()`, `get_status()`) should also be overwritten to support
+        those changes. Regardless of the changes or the algorithm's logic, the function arguments and
+        return type must remain the same.
 
         Arguments:
-            process_id: ID of the process calling this function.
+            pid: ID of the process calling this function.
             maze_data: The maze data.
-            shared_memory: Shared memory dictionary.
+            memory: The algorithm's memory.
 
-        The function must set **shared_memory[process_id]['current_pos']** to the new position
-        after choosing the next step. The function must not manipulate with other variables
-        within the shared memory.
+        Returns:
+            The new position after taking a step.
         """
+
+        pass
+
+
+    @staticmethod
+    def _after_step(pid: int, new_pos: tuple[int, int], maze_data: dict[str, ...],
+                    memory: dict[str | int, ...]) -> None:
+        """
+        Logic for updating class variables and algorithm memory after taking a step.
+
+        This function should only be overwritten if the algorithm's memory is modified or there are
+        additional operations that need to be made. Additionally, if memory keys/values are modified,
+        then the relevant functions (`get_current_pos()`, `get_visited_pos()`, `get_status()`) should
+        also be overwritten to support those changes. Regardless of the changes or the algorithm's logic,
+        the function arguments must remain the same. This function can, but doesn't need to return anything.
+
+        Arguments:
+            pid: ID of the process calling this function.
+            new_pos: The new position after taking a step.
+            maze_data: The maze data.
+            memory: The algorithm's memory.
+        """
+
+        memory[pid]['current_pos'] = new_pos
+
+        if BaseAlgorithmParallel.is_at_end(memory[pid]['current_pos'], maze_data):
+            memory['reached_end'] = True
+
+        with memory['lock']:
+            if new_pos not in memory['visited_pos']:
+                memory['visited_pos'].append(new_pos)
 
 
     def cleanup(self) -> None:
         """ Cleanup processes and resources. """
 
-        if not self.processes:
-            return
-
-        for _ in range(len(self.processes)):
-            try:
-                self.com_queue.put('STOP')
-            except:
-                pass
+        for pid in range(self.num_processes):
+            self.memory[pid]['is_active'] = False
 
         for process in self.processes:
             process.join(timeout = 0.5)
