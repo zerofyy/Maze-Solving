@@ -47,8 +47,8 @@ class WandererSequential(BaseAlgorithmSequential):
 
     def get_status(self) -> list[tuple[str, ...]]:
         status = super().get_status()
-        status.append(('Confused          ', '[lg]Yes[rs]' if self.memory['confused'] else '[lr]No[rs]'))
-        status.append(('Breadcrumbs       ', f'[ly]{len(self.memory["breadcrumbs"])}[rs]'))
+        status.append(('Confused', '[lg]Yes[rs]' if self.memory['confused'] else '[lr]No[rs]'))
+        status.append(('Breadcrumbs', f'[ly]{len(self.memory["breadcrumbs"])}[rs]'))
         return status
 
 

@@ -104,18 +104,34 @@ class BaseAlgorithmParallel(ABC):
         ]
 
 
-    def get_current_pos(self) -> list[tuple[int, int]]:
+    def get_current_pos(self, best_pos: bool = False) -> list[tuple[int, int]] | tuple[int, int]:
         """
         Get the current position of each process from the algorithm.
 
         This function should be overwritten if the `'current_pos'` keys in the algorithm's memory are modified.
         Regardless of the modifications, the return type must remain the same.
 
+        Arguments:
+            best_pos: Whether to return the best position out of all processes.
+
         Returns:
-            The coordinates of the current position in the maze.
+            The coordinates of the current positions in the maze, or the position closest to the end if
+            best_pos is set to True.
         """
 
-        return [self.memory[pid]['current_pos'] for pid in range(self.num_processes)]
+        if not best_pos:
+            return [self.memory[pid]['current_pos'] for pid in range(self.num_processes)]
+
+        best_pos, best_dist = self.memory[0]['current_pos'], float('inf')
+        for pid in range(self.num_processes):
+            dist = abs(self.memory[pid]['current_pos'][0] - self.maze.end_pos[0]) + \
+                   abs(self.memory[pid]['current_pos'][1] - self.maze.end_pos[1])
+
+            if dist < best_dist:
+                best_dist = dist
+                best_pos = self.memory[pid]['current_pos']
+
+        return best_pos
 
 
     def get_visited_pos(self) -> set[tuple[int, int]]:
@@ -150,20 +166,20 @@ class BaseAlgorithmParallel(ABC):
         for pid in range(self.num_processes):
             local_memory = dict(self.memory[pid])
 
-            status.append((f'Process {pid}          ',
+            status.append((f'Process {pid}',
                            '[lg]Active[rs]' if local_memory['is_active'] else '[lr]Inactive[rs]'))
-            status.append(('[lr]|[rs] Current Position ', f'[ly]{local_memory["current_pos"]}[rs]'))
-            status.append(('[lr]|[rs] Step Flag        ',
+            status.append(('| Current Pos', f'[ly]{local_memory["current_pos"]}[rs]'))
+            status.append(('| Step Flag',
                            '[lg]Set[rs]' if local_memory["step_flag"] else '[lr]Unset[rs]'))
 
             response = local_memory["response"]
             if response is None:
-                status.append(('[lr]|[rs] Response         ', '[lr]No Response[rs]'))
+                status.append(('| Response', '[lr]No Response[rs]'))
             else:
-                status.append(('[lr]|[rs] Response         ', f'[lc]{response}[rs]'))
+                status.append(('| Response', f'[lc]{response}[rs]'))
 
-        status.append(('Visited Positions  ', f'[ly]{len(self.memory["visited_pos"])}[rs]'))
-        status.append(('Reached End        ', '[lg]Yes[rs]' if self.memory['reached_end'] else '[lr]No[rs]'))
+        status.append(('Visited Pos', f'[ly]{len(self.memory["visited_pos"])}[rs]'))
+        status.append(('Reached End', '[lg]Yes[rs]' if self.memory['reached_end'] else '[lr]No[rs]'))
 
         return status
 

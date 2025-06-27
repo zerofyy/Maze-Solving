@@ -1,11 +1,13 @@
 import re
 
+from .coloring import Coloring
+
 
 class ListMaker:
     """ Making lists from strings by filling blank spaces with information. """
 
     @staticmethod
-    def fill(text: str, info: list[tuple[str, str]], dir_offset: int = 0) -> str:
+    def fill(text: str, info: list[tuple[str, str]]) -> str:
         """
         Fill in the blanks of a string.
 
@@ -21,15 +23,9 @@ class ListMaker:
             with, while the direction is which way to align the text after it
             is replaced ("left" or "right").
 
-        Directional Offset:
-            The directional offset is applied when aligning text left or right.
-            By default, text is aligned as many spaces as there are characters
-            in the blank space (ex. ___ would align the text by 3 spaces).
-
         Arguments:
              text: A string with blank spaces ( _ ).
              info: An ordered list containing replacement strings and alignment directions.
-             dir_offset: Directional offset.
         """
 
         sections = [len(match) for match in re.findall(r'_+', text)]
@@ -37,10 +33,12 @@ class ListMaker:
 
         for rp_text, direction in info:
             section = '_' * sections[index]
+            offset = len(rp_text) - Coloring.length(rp_text)
+
             if direction == 'left':
-                text = text.replace(section, f'{rp_text:<{sections[index] + dir_offset}}', 1)
+                text = text.replace(section, f'{rp_text:<{sections[index] + offset}}', 1)
             else:
-                text = text.replace(section, f'{rp_text:>{sections[index] + dir_offset}}', 1)
+                text = text.replace(section, f'{rp_text:>{sections[index] + offset}}', 1)
             index += 1
 
         return text

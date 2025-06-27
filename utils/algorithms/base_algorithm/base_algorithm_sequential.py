@@ -110,9 +110,9 @@ class BaseAlgorithmSequential(ABC):
         """
 
         return [
-            ('Current Position  ', f'[ly]{self.memory["current_pos"]}[rs]'),
-            ('Visited Positions ', f'[ly]{len(self.memory["visited_pos"])}[rs]'),
-            ('Reached End       ', '[lg]Yes[rs]' if self.memory['reached_end'] else '[lr]No[rs]')
+            ('Current Pos', f'[ly]{self.memory["current_pos"]}[rs]'),
+            ('Visited Pos', f'[ly]{len(self.memory["visited_pos"])}[rs]'),
+            ('Reached End', '[lg]Yes[rs]' if self.memory['reached_end'] else '[lr]No[rs]')
         ]
 
 

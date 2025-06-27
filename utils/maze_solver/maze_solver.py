@@ -1,6 +1,7 @@
 import time
 
 from utils.maze_generator import Maze
+from utils.assets import Display
 from .results_collector import ResultsCollector
 
 
@@ -8,8 +9,9 @@ class MazeSolver:
     """ Simplified set up, execution, and performance measurements of maze solving algorithms. """
 
 
-    def __init__(self, algorithm_args: dict[str, ...], mazes: list[dict[str, ...]], measure_performance: bool = True,
-                 wait_after_step: int | str | None = None, show_progress: str | bool = True) -> None:
+    def __init__(self, algorithm_args: dict[str, ...], mazes: list[dict[str, ...]],
+                 measure_performance: bool = True, wait_after_step: int | str | None = None,
+                 show_progress: str | bool = True, coloring: bool = False) -> None:
         """
         Create a new instance of the MazeSolver class and set it up.
 
@@ -31,12 +33,14 @@ class MazeSolver:
              measure_performance: Whether to measure the algorithm's performance for each maze.
              wait_after_step: The method for waiting after each step.
              show_progress: The type of real time progress to display when running the algorithm.
+             coloring: Whether to use coloring in the progress display.
         """
 
         self.algorithm_args = algorithm_args
         self.mazes = mazes
         self.measure_performance = measure_performance
         self.show_progress = show_progress
+        self.coloring = coloring
 
         def wait_method():
             if wait_after_step == 'input':
@@ -67,8 +71,13 @@ class MazeSolver:
         maze = maze_args['maze']
         algorithm = self.algorithm_args['algorithm']()
 
+        display = Display(algorithm, maze,
+                          text_display = True if self.show_progress else False,
+                          maze_display = True if self.show_progress in ['visual', 'detailed'] else False)
+        detailed_progress = self.show_progress == 'detailed'
+
         max_steps = self._get_max_steps(maze, maze_args['max_steps'])
-        rc = ResultsCollector(algorithm, maze, max_steps, self.show_progress)
+        rc = ResultsCollector(algorithm, maze, max_steps)
         rc.start('measure')
 
         algorithm.setup(maze = maze, **self.algorithm_args['args'])
@@ -80,7 +89,9 @@ class MazeSolver:
 
             new_pos, reached_end = algorithm.step()
             rc.update()
-            rc.get_progress()
+
+            progress = rc.get_progress(coloring = self.coloring, details = detailed_progress)
+            display.update(text = progress, maze_colors = self.coloring)
 
             if new_pos is None or reached_end:
                 break
@@ -88,7 +99,9 @@ class MazeSolver:
             self.wait_after_step()
 
         if self.measure_performance:
-            rc.get_results('console')
+            results = rc.get_results('string', coloring = self.coloring)
+            display.update(text = results, maze_colors = self.coloring)
+            print()
             return rc.get_results('dict')
 
         return None

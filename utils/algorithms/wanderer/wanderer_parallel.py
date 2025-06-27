@@ -62,11 +62,11 @@ class WandererParallel(BaseAlgorithmParallel):
         for pid in range(self.num_processes):
             status.insert(
                 4 * (pid + 1) + offset,
-                ('[lr]|[rs] Breadcrumbs      ', f'[ly]{len(self.memory[pid]["breadcrumbs"])}[rs]')
+                ('| Breadcrumbs', f'[ly]{len(self.memory[pid]["breadcrumbs"])}[rs]')
             )
             offset += 1
 
-        status.append(('Confused           ', '[lg]Yes[rs]' if self.memory['confused'] else '[lr]No[rs]'))
+        status.append(('Confused', '[lg]Yes[rs]' if self.memory['confused'] else '[lr]No[rs]'))
 
         return status
 
