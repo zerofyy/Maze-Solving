@@ -83,13 +83,12 @@ class ResultsCollector:
 
         if isinstance(self.algorithm, BaseAlgorithmSequential):
             self.results['reached_end'] = self.algorithm.is_at_end()
+            current_pos = self.algorithm.get_current_pos()
         else:
             self.results['reached_end'] = self.algorithm.memory.get('reached_end')
+            current_pos = self.algorithm.get_current_pos(best_pos = True)
 
         self.results['exploration'] = len(self.algorithm.get_visited_pos())
-
-        current_pos = self.algorithm.get_current_pos() if isinstance(self.algorithm, BaseAlgorithmSequential) \
-            else self.algorithm.get_current_pos(best_pos = True)
         self.results['sp_from_end'] = int(
             abs(current_pos[0] - self.maze.end_pos[0]) +
             abs(current_pos[1] - self.maze.end_pos[1])

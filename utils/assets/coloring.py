@@ -41,27 +41,10 @@ class Coloring:
             The same string with the color codes replaced by actual color values.
         """
 
-        colored_str = ''
-        color_code, reading_code = '', False
+        for code, color in Coloring.codes.items():
+            string = string.replace(f'[{code}]', color)
 
-        for char in string:
-            if char == '[':
-                if reading_code:
-                    colored_str += f'[{color_code}'
-                color_code, reading_code = '', True
-                continue
-
-            if char == ']':
-                colored_str += Coloring.codes.get(color_code, f'[{color_code}]' if color_code else ']')
-                color_code, reading_code = '', False
-                continue
-
-            if reading_code:
-                color_code += char
-            else:
-                colored_str += char
-
-        return colored_str
+        return string
 
 
     @staticmethod
@@ -76,29 +59,10 @@ class Coloring:
             The same string with the color codes removed.
         """
 
-        new_str = ''
-        color_code, reading_code = '', False
+        for code in Coloring.codes:
+            string = string.replace(f'[{code}]', '')
 
-        for char in string:
-            if char == '[':
-                if reading_code:
-                    new_str += f'[{color_code}'
-                color_code, reading_code = '', True
-                continue
-
-            if char == ']':
-                if color_code not in Coloring.codes:
-                    new_str += f'[{color_code}]' if color_code else ']'
-
-                color_code, reading_code = '', False
-                continue
-
-            if reading_code:
-                color_code += char
-            else:
-                new_str += char
-
-        return new_str
+        return string
 
 
     @staticmethod
@@ -113,46 +77,39 @@ class Coloring:
             The length of the string while ignoring color codes.
         """
 
-        length = 0
-        color_code, reading_code = '', False
-
-        for char in string:
-            if char == '[':
-                if reading_code:
-                    length += len(color_code) + 1
-                color_code, reading_code = '', True
-                continue
-
-            if char == ']':
-                if color_code not in Coloring.codes:
-                    length += len(color_code) + (2 if color_code else 1)
-                color_code, reading_code = '', False
-                continue
-
-            if reading_code:
-                color_code += char
-            else:
-                length += 1
-
-        return length
+        string = Coloring.uncolor(string)
+        return len(string)
 
 
     @staticmethod
-    def _cut_invalid_code(invalid_code: str, str_idx: int, length: list[int, int]) -> tuple[str, int]:
-        """ Helper function for cutting invalid color codes to fit within the specified length. """
+    def _parse_tokens(string: str) -> list[str]:
+        """ Helper function for parsing strings containing color codes. """
 
-        if str_idx == length[1]:
-            return '', str_idx
+        tokens = []
+        char_idx = -1
+        while char_idx + 1 < len(string):
+            char_idx += 1
+            char = string[char_idx]
 
-        cut_code = ''
-        for char in invalid_code:
-            str_idx += 1
-            if str_idx >= length[0]:
-                cut_code += char
-            if str_idx == length[1]:
-                break
+            if char != '[':
+                tokens.append(char)
+                continue
 
-        return cut_code, str_idx
+            end_tag = string.find(']', char_idx + 1)
+            if end_tag == -1:
+                tokens.append(char)
+                continue
+
+            code = string[char_idx + 1 : end_tag]
+            if code in Coloring.codes:
+                tokens.append(f'[{code}]')
+                char_idx = end_tag
+                continue
+
+            tokens.append(char)
+            continue
+
+        return tokens
 
 
     @staticmethod
@@ -177,41 +134,27 @@ class Coloring:
             length[0] = str_len + length[0]
         if length[1] < 0:
             length[1] = str_len + length[1]
+        length[1] = length[1] + 1
 
-        new_str, str_idx = '', -1
-        color_code, reading_code = '', False
+        if length[0] >= length[1]:
+            return '[rs]'
 
-        for char in string:
-            if char == '[':
-                if reading_code:
-                    chars, str_idx = Coloring._cut_invalid_code(f'[{color_code}', str_idx, length)
-                    new_str += chars
+        new_str = ''
+        char_idx = 0
+        for char in Coloring._parse_tokens(string):
+            is_code = len(char) > 1
 
-                color_code, reading_code = '', True
+            if is_code:
+                if char_idx >= length[0]:
+                    new_str += char
                 continue
 
-            if char == ']':
-                if color_code in Coloring.codes:
-                    new_str += f'[{color_code}]'
-                elif reading_code:
-                    chars, str_idx = Coloring._cut_invalid_code(f'[{color_code}]', str_idx, length)
-                    new_str += chars
-                else:
-                    chars, str_idx = Coloring._cut_invalid_code(']', str_idx, length)
-                    new_str += chars
-
-                color_code, reading_code = '', False
-                continue
-
-            if reading_code:
-                color_code += char
-                continue
-
-            str_idx += 1
-            if str_idx >= length[0]:
-                new_str += char
-            if str_idx == length[1]:
+            if char_idx >= length[1]:
                 break
+
+            if char_idx >= length[0]:
+                new_str += char
+            char_idx += 1
 
         return new_str + '[rs]'
 
@@ -229,41 +172,23 @@ class Coloring:
         """
 
         chars = []
-        color_code, reading_code = '', False
+        pending_code = ''
+        for char in Coloring._parse_tokens(string):
+            is_code = len(char) > 1
 
-        for char in string:
-            if char == '[':
-                if reading_code:
-                    chars.extend(list(f'[{color_code}'))
-
-                color_code, reading_code = '', True
+            if is_code:
+                pending_code += char
                 continue
 
-            if char == ']':
-                if color_code and color_code in Coloring.codes:
-                    pass
-                elif reading_code:
-                    chars.extend(list(f'[{color_code}]'))
-                    color_code = ''
-                else:
-                    chars.append(']')
-                    color_code = ''
-
-                reading_code = False
+            if pending_code:
+                chars.append(f'{pending_code}{char}')
+                pending_code = ''
                 continue
 
-            if reading_code:
-                color_code += char
-                continue
+            chars.append(char)
 
-            if color_code:
-                chars.append(f'[{color_code}]{char}')
-                color_code = ''
-            else:
-                chars.append(char)
-
-        if color_code:
-            chars[-1] = f'{chars[-1]}[{color_code}]'
+        if pending_code:
+            chars[-1] += pending_code
 
         return chars
 

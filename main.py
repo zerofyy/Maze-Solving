@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     mazes = [
         {
-            'maze' : MazeGenerator.generate(100, 'middle', 'random_corner'),
+            'maze' : MazeGenerator.generate(40, 'middle', 'random_corner'),
             'max_steps' : 'unlimited',
             'num_iterations' : 1
         }
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         mazes = mazes,
         measure_performance = True,
         wait_after_step = None,
-        show_progress = 'detailed',
+        show_progress = 'visual',
         coloring = True
     )
 

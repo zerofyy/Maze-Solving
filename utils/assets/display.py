@@ -27,8 +27,8 @@ class Display:
         self.algorithm = algorithm
 
         try:
-            self.width = os.get_terminal_size().columns
-            self.height = os.get_terminal_size().lines
+            self.width = os.get_terminal_size().columns - 1
+            self.height = os.get_terminal_size().lines - 1
         except OSError:
             self.width = 200
             self.height = 50
@@ -64,9 +64,9 @@ class Display:
         """
         self.matrix = [[' ' for _ in range(self.width)] for _ in range(self.height)]
 
+        print('\033[H', end='')
         if not soft_clear:
             print('\033[2J', end = '')
-        print('\033[H', end = '')
 
 
     def _update_text(self, text: str) -> None:
@@ -117,7 +117,7 @@ class Display:
 
         for row in range(box_h):
             maze_row = start_row + row
-            if row >= maze_rows:
+            if maze_row >= maze_rows:
                 break
 
             col = bound_l
@@ -164,7 +164,7 @@ class Display:
             self._update_maze(maze_colors)
 
         lines = [''.join(line) + '\n' for line in self.matrix]
-        print(Coloring.color(''.join(lines)), end = '')
+        print(Coloring.color(''.join(lines)), end = '', flush = True)
 
 
 __all__ = ['Display']
