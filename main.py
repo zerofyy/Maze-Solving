@@ -1,30 +1,26 @@
-import multiprocessing as mp
-
-from utils.algorithms import WandererSequential, WandererParallel
+from utils.algorithms import *
 from utils.maze_solver import MazeSolver
 from utils.maze_generator import MazeGenerator
 from utils.assets import Coloring
 
 
 if __name__ == '__main__':
-    mp.freeze_support()
-    mp.set_start_method('spawn', force = True)
-
     Coloring.init()
 
     input('... preventing program from starting by waiting for input ...')
 
     algorithm = {
-        'algorithm' : WandererSequential,
+        'algorithm' : WallHuggerSequential,
         'args' : {
-            # 'num_processes': 4,
-            'confused' : False
+            # 'num_threads': 4,
+            # 'confused' : False
+            'direction' : 'left'
         }
     }
 
     mazes = [
         {
-            'maze' : MazeGenerator.generate(40, 'middle', 'random_corner'),
+            'maze' : MazeGenerator.generate(10, 'middle', 'random_corner'),
             'max_steps' : 'unlimited',
             'num_iterations' : 1
         }
@@ -34,8 +30,8 @@ if __name__ == '__main__':
         algorithm_args = algorithm,
         mazes = mazes,
         measure_performance = True,
-        wait_after_step = None,
-        show_progress = 'visual',
+        wait_after_step = 50,
+        show_progress = 'detailed',
         coloring = True
     )
 

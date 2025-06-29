@@ -1,7 +1,7 @@
 import time
 import tracemalloc
 
-from utils.algorithms import BaseAlgorithmSequential, BaseAlgorithmParallel
+from utils.algorithms import BaseAlgorithmSequential, BaseAlgorithmThreaded
 from utils.maze_generator import Maze
 from utils.assets import Coloring, ListMaker
 
@@ -14,9 +14,9 @@ class ResultsCollector:
     last_solve_time: float = None
 
 
-    def __init__(self, algorithm: BaseAlgorithmSequential | BaseAlgorithmParallel, maze: Maze, max_steps: int) -> None:
+    def __init__(self, algorithm: BaseAlgorithmSequential | BaseAlgorithmThreaded, maze: Maze, max_steps: int) -> None:
         """
-        Create a new instance of the ResultsCollector class.
+        Initialize the results collector.
 
         Arguments:
              algorithm: The algorithm solving the maze.

@@ -36,24 +36,19 @@ class BaseAlgorithmSequential(ABC):
         return reached_end
 
 
-    def get_legal_moves(self, position: tuple[int, int] = None) -> list[tuple[int, int]]:
+    def get_legal_moves(self) -> list[tuple[int, int]]:
         """
-        Get a list of legal moves.
-
-        Arguments:
-            position: A specific position to check for legal moves, defaults to the current position.
+        Get a list of legal moves from the current position.
 
         Returns:
-            A list of new positions that can be visited from the current or specified position. If no
-            legal moves exist, the list will be empty.
+            A list of new positions that can be visited from the current.
+            If no legal moves exist, the list will be empty.
         """
-
-        if position is None:
-            position = self.memory['current_pos']
 
         if self.is_at_end():
             return []
 
+        position = self.memory['current_pos']
         check_moves = [
             (position[0] - 1, position[1]),
             (position[0] + 1, position[1]),
@@ -102,8 +97,8 @@ class BaseAlgorithmSequential(ABC):
 
         By default, this function returns information from the algorithm's memory. If the algorithm's memory
         has been modified - this function should be overwritten to include those modifications in the status
-        dictionary (in an appropriate format for real time displays). Regardless of the modifications, the
-        return type of this function must remain the same.
+        list (in an appropriate format for text displays). Regardless of the modifications, the return type
+        of this function must remain the same.
 
         Returns:
             A list with status information.
@@ -138,7 +133,7 @@ class BaseAlgorithmSequential(ABC):
     def _step_logic(self) -> tuple[int, int]:
         """
         Logic for choosing the next move from the current position with the assumption that there's at
-        least one legal moves from the current position.
+        least one legal move from the current position.
 
         If anything in the algorithm's memory has been modified (ex. `'current_pos', 'visited_pos'`), then
         the logic for updating those variables should also be implemented here or within the `_after_step()`

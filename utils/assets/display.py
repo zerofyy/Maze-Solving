@@ -2,7 +2,7 @@ import os
 
 from utils.maze_generator import Maze
 from .coloring import Coloring
-from utils.algorithms import BaseAlgorithmSequential, BaseAlgorithmParallel
+from utils.algorithms import BaseAlgorithmSequential, BaseAlgorithmThreaded
 
 
 class Display:
@@ -11,10 +11,10 @@ class Display:
     matrix: list[list[str]] = None
 
 
-    def __init__(self, algorithm: BaseAlgorithmSequential | BaseAlgorithmParallel, maze: Maze,
+    def __init__(self, algorithm: BaseAlgorithmSequential | BaseAlgorithmThreaded, maze: Maze,
                  text_display: bool = True, maze_display: bool = True) -> None:
         """
-        Create a new instance of the Display class.
+        Initialize the terminal display.
 
         Arguments:
             algorithm: The algorithm currently solving the maze.
@@ -70,7 +70,7 @@ class Display:
 
 
     def _update_text(self, text: str) -> None:
-        """ Helper function for updating the text display. """
+        """ Update the text display. """
 
         for i, line in enumerate(text.split('\n')):
             row, col = self.text_bound[0] + i + 1, self.text_bound[1]
@@ -85,11 +85,11 @@ class Display:
 
 
     def _update_maze(self, coloring: bool) -> None:
-        """ Helper function for updating the maze display. """
+        """ Update the maze display. """
 
         current_pos = self.algorithm.get_current_pos() if isinstance(self.algorithm, BaseAlgorithmSequential) \
             else self.algorithm.get_current_pos(best_pos = True)
-        process_pos = self.algorithm.get_current_pos() if isinstance(self.algorithm, BaseAlgorithmParallel) \
+        thread_pos = self.algorithm.get_current_pos() if isinstance(self.algorithm, BaseAlgorithmThreaded) \
             else []
         visited_pos = self.algorithm.get_visited_pos()
 
@@ -127,7 +127,7 @@ class Display:
                     break
 
                 pos = (maze_row, maze_col)
-                if pos == current_pos or pos in process_pos:
+                if pos == current_pos or pos in thread_pos:
                     char = self.char_curr
                 elif pos == self.maze.end_pos:
                     char = self.char_end

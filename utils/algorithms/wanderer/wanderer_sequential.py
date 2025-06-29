@@ -13,7 +13,6 @@ class WandererSequential(BaseAlgorithmSequential):
         - confused: Makes random moves without keeping track of visited spaces.
     """
 
-
     def setup(self, maze: Maze, confused: bool = False) -> None:
         """
         Set up the algorithm.

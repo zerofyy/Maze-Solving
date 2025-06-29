@@ -20,11 +20,11 @@
 ✅ |-|-| base_algorithm/
 ✅ |-|-|-| __init__.py
 ✅ |-|-|-| base_algorithm_sequential.py
-✅ |-|-|-| base_algorithm_parallel.py
+✅ |-|-|-| base_algorithm_threaded.py
 ✅ |-|-| wanderer/
 ✅ |-|-|-| __init__.py
 ✅ |-|-|-| wanderer_sequential.py
-✅ |-|-|-| wanderer_parallel.py
+✅ |-|-|-| wanderer_threaded.py
 ❌ |-|-| ...
 ⬛ |-|
 ❌ |-| input_parser/
@@ -43,7 +43,8 @@
 ```
 
 # TODO
-- Try threading instead of multiprocessing.
+- Finish the Wall Hugger algorithm.
+  - Fix its logic, so it doesn't get stuck in loops near the center of the maze.
 - Implement the input parser.
 - Implement proper code in main.
 - Add new algorithms.
@@ -52,9 +53,11 @@
 - ...
 
 # Latest Changes
-Performance improvements and bug fixes.
+Switched to threading, began implementing a new algorithm, and improved performance.
 
-- Improved the performance of the Coloring class.
-- Fixed the real time progress display bouncing/glitching when the algorithm moves too fast through the maze.
-- Minor changes to the ResultsCollector class.
+- Replaced multiprocessing with threading.
+- Minor changes to sequential algorithms to match the structure of threaded algorithms.
+- Significantly improved the efficiency of threaded algorithms.
+- Began implementation of a new algorithm: Wall Hugger.
+- Docstring changes.
 - Updated TODO.

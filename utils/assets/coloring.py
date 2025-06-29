@@ -32,7 +32,7 @@ class Coloring:
     @staticmethod
     def color(string: str) -> str:
         """
-        Color a string.
+        Color the given string.
 
         Arguments:
             string: A string containing color codes.
@@ -50,7 +50,7 @@ class Coloring:
     @staticmethod
     def uncolor(string: str) -> str:
         """
-        Remove all color codes from a string.
+        Remove all color codes from the given string.
 
         Arguments:
             string: A string containing color codes.
@@ -68,7 +68,7 @@ class Coloring:
     @staticmethod
     def length(string: str) -> int:
         """
-        Get the length of a string with color codes.
+        Measure the length of the given string.
 
         Arguments:
              string: A string containing color codes.
@@ -83,7 +83,7 @@ class Coloring:
 
     @staticmethod
     def _parse_tokens(string: str) -> list[str]:
-        """ Helper function for parsing strings containing color codes. """
+        """ Parse the given string for regular characters and color codes. """
 
         tokens = []
         char_idx = -1
@@ -115,7 +115,7 @@ class Coloring:
     @staticmethod
     def cut(string: str, length: int | list[int, int]) -> str:
         """
-        Cut a string with color codes.
+        Cut the given string.
 
         Arguments:
              string: A string containing color codes.
@@ -162,7 +162,7 @@ class Coloring:
     @staticmethod
     def chars(string: str) -> list[str]:
         """
-        Get a list of characters along with color codes.
+        Get a list of regular characters and color codes from the given string.
 
         Arguments:
              string: A string containing color codes.

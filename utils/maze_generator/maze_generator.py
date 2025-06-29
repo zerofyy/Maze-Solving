@@ -12,7 +12,7 @@ class MazeGenerator:
 
     @staticmethod
     def _gen_empty_maze(size: int) -> list[list[str | int]]:
-        """ Helper function for creating an empty maze. """
+        """ Generate an empty maze. """
 
         size = size * 2 + 1
         maze = []
@@ -28,7 +28,7 @@ class MazeGenerator:
 
     @staticmethod
     def _gen_maze_paths(maze: list[list[int]], size: int) -> list[list[int]]:
-        """ Helper function for creating paths inside an empty maze. """
+        """ Generate paths in an empty maze. """
 
         u_limit, d_limit, l_limit, r_limit = 1, size * 2 - 1, 3, size * 2 - 1
         direction = 2, 0

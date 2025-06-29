@@ -2,7 +2,7 @@ import random
 
 
 class Maze:
-    """ Randomly generated maze using a modified version of Prim's algorithm. """
+    """ Representation of a randomly generated maze. """
 
     start_pos: tuple[int, int] = None
     end_pos: tuple[int, int] = None
@@ -12,7 +12,7 @@ class Maze:
 
     def __init__(self, maze: list[list[int]], start_pos: str, end_pos: str) -> None:
         """
-        Create a new instance of the Maze class.
+        Initialize the maze.
 
         Start & End Positions:
             top_left, top_right, bottom_left, bottom_right, middle, random, random_corner, random_any.

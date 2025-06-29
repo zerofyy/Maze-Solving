@@ -6,14 +6,13 @@ from .results_collector import ResultsCollector
 
 
 class MazeSolver:
-    """ Simplified set up, execution, and performance measurements of maze solving algorithms. """
-
+    """ Set up, execute, and measure performance of maze solving algorithms. """
 
     def __init__(self, algorithm_args: dict[str, ...], mazes: list[dict[str, ...]],
                  measure_performance: bool = True, wait_after_step: int | str | None = None,
                  show_progress: str | bool = True, coloring: bool = False) -> None:
         """
-        Create a new instance of the MazeSolver class and set it up.
+        Initialize the maze solver.
 
         Waiting Methods:
             - <int> | Number of milliseconds to wait.
@@ -52,7 +51,7 @@ class MazeSolver:
 
     @staticmethod
     def _get_max_steps(maze: Maze, max_steps: str | int) -> int:
-        """ Helper function for calculating the maximum number of allowed steps. """
+        """ Calculate the maximum number of allowed steps. """
 
         match max_steps:
             case 'auto':
@@ -66,7 +65,7 @@ class MazeSolver:
 
 
     def _solve(self, maze_args: dict[str, ...]) -> dict[str, ...] | str | None:
-        """ Helper function for solving a maze and collecting results. """
+        """ Solve a maze and measure the algorithm's performance. """
 
         maze = maze_args['maze']
         algorithm = self.algorithm_args['algorithm']()
@@ -101,7 +100,6 @@ class MazeSolver:
         if self.measure_performance:
             results = rc.get_results('string', coloring = self.coloring)
             display.update(text = results, maze_colors = self.coloring)
-            print()
             return rc.get_results('dict')
 
         return None
