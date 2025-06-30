@@ -11,7 +11,7 @@ class MazeGenerator:
 
 
     @staticmethod
-    def _gen_empty_maze(size: int) -> list[list[str | int]]:
+    def _gen_empty_maze(size: int) -> list[list[int]]:
         """ Generate an empty maze. """
 
         size = size * 2 + 1
@@ -34,7 +34,7 @@ class MazeGenerator:
         direction = 2, 0
         row, col = -1, 1
 
-        for _ in range(size ** 2):
+        for _ in range(size ** 2 - 1):
             row, col = row + direction[0], col + direction[1]
 
             if direction == (2, 0):
@@ -82,6 +82,14 @@ class MazeGenerator:
                 continue
 
         maze[size][size] = MazeGenerator.path
+
+        if size % 2 != 0:
+            return maze
+
+        if maze[size - 1][size] == MazeGenerator.path:
+            maze[size][size + 1] = MazeGenerator.wall
+        else:
+            maze[size + 1][size] = MazeGenerator.wall
 
         return maze
 

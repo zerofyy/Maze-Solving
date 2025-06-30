@@ -10,17 +10,17 @@ if __name__ == '__main__':
     input('... preventing program from starting by waiting for input ...')
 
     algorithm = {
-        'algorithm' : WallHuggerSequential,
+        'algorithm' : WallHuggerThreaded,
         'args' : {
-            # 'num_threads': 4,
+            'num_threads': 4,
             # 'confused' : False
-            'direction' : 'left'
+            # 'direction' : 'right'
         }
     }
 
     mazes = [
         {
-            'maze' : MazeGenerator.generate(10, 'middle', 'random_corner'),
+            'maze' : MazeGenerator.generate(24, 'middle', 'random_corner'),
             'max_steps' : 'unlimited',
             'num_iterations' : 1
         }
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         algorithm_args = algorithm,
         mazes = mazes,
         measure_performance = True,
-        wait_after_step = 50,
+        wait_after_step = None,
         show_progress = 'detailed',
         coloring = True
     )

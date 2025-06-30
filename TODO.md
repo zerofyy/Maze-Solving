@@ -43,21 +43,21 @@
 ```
 
 # TODO
-- Finish the Wall Hugger algorithm.
-  - Fix its logic, so it doesn't get stuck in loops near the center of the maze.
-- Implement the input parser.
-- Implement proper code in main.
-- Add new algorithms.
+- InputParser:
+  1. Keeps a list of all algorithms and asks for their setup arguments to be set.
+  2. Option to add mazes and set their arguments.
+  3. Display options.
+  4. Run.
+- Proper main code.
+- New algorithms: Radar (makes moves that lead closer to the end), BFS, DFS, A*.
+- Write readme.
 
 # Notes & Ideas
 - ...
 
 # Latest Changes
-Switched to threading, began implementing a new algorithm, and improved performance.
+Maze generation fixes and new algorithms.
 
-- Replaced multiprocessing with threading.
-- Minor changes to sequential algorithms to match the structure of threaded algorithms.
-- Significantly improved the efficiency of threaded algorithms.
-- Began implementation of a new algorithm: Wall Hugger.
-- Docstring changes.
+- Fixed the maze generation creating a small loop at the center in mazes of even sizes.
+- Finished the WallHugger algorithm (both Sequential and Threaded).
 - Updated TODO.

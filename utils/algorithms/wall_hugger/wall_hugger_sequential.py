@@ -1,5 +1,3 @@
-import random
-
 from utils.algorithms.base_algorithm import BaseAlgorithmSequential
 from utils.maze_generator import Maze
 
@@ -57,18 +55,13 @@ class WallHuggerSequential(BaseAlgorithmSequential):
             if new_pos not in legal_moves:
                 continue
 
-            if new_pos == (self.maze.size, self.maze.size):
-                continue
-
             self.memory['facing'] = self.move_to_facing[move]
             return new_pos
-
-        return random.choice(legal_moves)
 
 
     def get_status(self) -> list[tuple[str, ...]]:
         status = super().get_status()
-        status.append(('Direction', f'[lc]{self.memory["direction"]}[rs]'))
+        status.append(('Direction', f'[lg]{self.memory["direction"]}[rs]'))
         status.append(('Facing', f'[lc]{self.memory["facing"]}[rs]'))
         return status
 

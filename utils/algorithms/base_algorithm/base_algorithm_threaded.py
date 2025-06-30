@@ -34,8 +34,8 @@ class BaseAlgorithmThreaded(ABC):
             'lock': threading.Lock()
         }
 
-        for i in range(self.num_threads):
-            self.memory[i] = {
+        for tid in range(self.num_threads):
+            self.memory[tid] = {
                 'current_pos': maze.start_pos,
                 'is_active': True,
                 'step_flag': threading.Event(),
