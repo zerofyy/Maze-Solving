@@ -9,32 +9,29 @@ if __name__ == '__main__':
 
     input('... preventing program from starting by waiting for input ...')
 
-    algorithm = {
-        'algorithm' : WallHuggerThreaded,
-        'args' : {
-            'num_threads': 4,
-            # 'confused' : False
-            # 'direction' : 'right'
-        }
-    }
-
-    mazes = [
-        {
-            'maze' : MazeGenerator.generate(24, 'middle', 'random_corner'),
-            'max_steps' : 'unlimited',
-            'num_iterations' : 1
-        }
+    algorithms = [
+        {'algorithm': WandererSequential, 'args': {'confused': False}},
+        {'algorithm': WandererThreaded, 'args': {'num_threads': 4, 'confused' : False}},
+        {'algorithm': WallHuggerSequential, 'args': {'direction': 'left'}},
+        {'algorithm': WallHuggerThreaded, 'args': {'num_threads': 2}},
     ]
 
-    ms = MazeSolver(
-        algorithm_args = algorithm,
-        mazes = mazes,
-        measure_performance = True,
-        wait_after_step = None,
-        show_progress = 'detailed',
-        coloring = True
-    )
+    mazes = [
+        {'maze' : MazeGenerator.generate(30, start_pos = 'random_corner', end_pos = 'random_corner'),
+         'max_steps' : 'auto', 'num_iterations' : 1}
+    ]
 
-    ms.run()
+
+    for algorithm in algorithms:
+        solver = MazeSolver(
+            algorithm_args = algorithm,
+            mazes = mazes,
+            measure_performance = True,
+            wait_after_step = None,
+            show_progress = 'detailed',
+            coloring = True
+        )
+
+        solver.run(wait_after_iter = True)
 
     input('... preventing program from stopping by waiting for input ...')

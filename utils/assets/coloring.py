@@ -187,7 +187,7 @@ class Coloring:
 
             chars.append(char)
 
-        if pending_code:
+        if pending_code and chars:
             chars[-1] += pending_code
 
         return chars

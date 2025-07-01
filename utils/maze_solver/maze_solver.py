@@ -76,20 +76,20 @@ class MazeSolver:
         detailed_progress = self.show_progress == 'detailed'
 
         max_steps = self._get_max_steps(maze, maze_args['max_steps'])
-        rc = ResultsCollector(algorithm, maze, max_steps)
-        rc.start('measure')
+        collector = ResultsCollector(algorithm, maze, max_steps)
+        collector.start('measure')
 
         algorithm.setup(maze = maze, **self.algorithm_args['args'])
-        rc.start('track')
+        collector.start('track')
 
         while True:
-            if max_steps != 0 and rc.results['steps_taken'] == max_steps:
+            if max_steps != 0 and collector.results['steps_taken'] == max_steps:
                 break
 
             new_pos, reached_end = algorithm.step()
-            rc.update()
+            collector.update()
 
-            progress = rc.get_progress(coloring = self.coloring, details = detailed_progress)
+            progress = collector.get_progress(coloring = self.coloring, details = detailed_progress)
             display.update(text = progress, maze_colors = self.coloring)
 
             if new_pos is None or reached_end:
@@ -98,16 +98,22 @@ class MazeSolver:
             self.wait_after_step()
 
         if self.measure_performance:
-            results = rc.get_results('string', coloring = self.coloring)
+            results = collector.get_results('string', coloring = self.coloring)
             display.update(text = results, maze_colors = self.coloring)
-            return rc.get_results('dict')
+
+            collector.get_results(f'results/{algorithm.__class__.__name__}_Maze{maze.size}_{int(time.time())}.txt')
+
+            return collector.get_results('dict')
 
         return None
 
 
-    def run(self) -> dict[str, ...] | None:
+    def run(self, wait_after_iter: bool = True) -> dict[str, ...] | None:
         """
         Run the algorithm on all given mazes.
+
+        Arguments:
+            wait_after_iter: Whether to wait for input after each iteration.
 
         Returns:
             A dictionary of statistics for the algorithm or None if measure_performance is set to False.
@@ -115,9 +121,11 @@ class MazeSolver:
 
         for maze_args in self.mazes:
             for i in range(maze_args['num_iterations']):
-                results = self._solve(maze_args)
 
-                # ...
+                self._solve(maze_args)
+
+                if wait_after_iter:
+                    input('... preventing from running next iteration by waiting for input ...')
 
         return None
 

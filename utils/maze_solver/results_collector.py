@@ -121,18 +121,18 @@ class ResultsCollector:
         """
 
         progress = f'_____________________________________________\n' \
-                   f'===\n' \
+                   f'=============================================\n' \
                    f'| * Time Passed    : ______________________ |\n' \
                    f'| * Solve Time     : ______________________ |\n' \
                    f'| * Avg Step Time  : ______________________ |\n' \
-                   f'===\n' \
+                   f'=============================================\n' \
                    f'| * Steps Taken    : ______________________ |\n' \
                    f'| * Explored       : ______________________ |\n' \
                    f'| * Progress       : ______________________ |\n' \
-                   f'===\n' \
+                   f'=============================================\n' \
                    f'| * Avg Mem Usage  : ______________________ |\n' \
                    f'| * Peak Mem Usage : ______________________ |\n' \
-                   f'===' \
+                   f'=============================================\n' \
 
         total_time = f'{round(self.results["total_time"] / 60, 2)} min' \
             if self.results['total_time'] > 60 else f'{self.results["total_time"]} sec'
@@ -154,19 +154,13 @@ class ResultsCollector:
             for key, val in self.algorithm.get_status():
                 progress += f'\n| * {key:<14} : {"_" * 22} |'
                 list_info.append((val, 'left'))
-            progress += '\n==='
+            progress += '\n============================================='
 
-        progress = ListMaker.fill(
-            text = progress,
-            info = list_info
-        )
+        progress = ListMaker.fill(text = progress, info = list_info)
 
         if coloring:
-            progress = progress.replace('| ', f'[fb]| [rs]')
-            progress = progress.replace('* ', f'[fb][y]* [rs]')
-            progress = progress.replace('===', f'[fb]=============================================[rs]')
+            progress = progress.replace('* ', f'[y]* [rs]')
         else:
-            progress = progress.replace('===', '=============================================')
             progress = Coloring.uncolor(progress)
 
         return progress
