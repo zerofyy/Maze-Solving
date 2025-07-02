@@ -1,5 +1,6 @@
 import time
 
+from utils.algorithms import BaseAlgorithmThreaded
 from utils.maze_generator import Maze
 from utils.assets import Display
 from .results_collector import ResultsCollector
@@ -41,6 +42,11 @@ class MazeSolver:
         self.show_progress = show_progress
         self.coloring = coloring
 
+        if wait_after_step == 'input' or wait_after_step is not None:
+            self.threaded_wait_for_flag = True
+        else:
+            self.threaded_wait_for_flag = False
+
         def wait_method():
             if wait_after_step == 'input':
                 input('... waiting for input ...')
@@ -57,7 +63,7 @@ class MazeSolver:
             case 'auto':
                 return maze.size ** 2 * 2
             case 'fewest':
-                return abs(maze.start_pos[0] - maze.end_pos[0]) + abs(maze.start_pos[1] - maze.end_pos[1]) + maze.size
+                return
             case 'unlimited':
                 return 0
             case _:
@@ -79,7 +85,10 @@ class MazeSolver:
         collector = ResultsCollector(algorithm, maze, max_steps)
         collector.start('measure')
 
-        algorithm.setup(maze = maze, **self.algorithm_args['args'])
+        if isinstance(algorithm, BaseAlgorithmThreaded):
+            algorithm.setup(maze = maze, wait_for_flag = self.threaded_wait_for_flag, **self.algorithm_args['args'])
+        else:
+            algorithm.setup(maze = maze, **self.algorithm_args['args'])
         collector.start('track')
 
         while True:

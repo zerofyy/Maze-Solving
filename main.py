@@ -10,15 +10,18 @@ if __name__ == '__main__':
     input('... preventing program from starting by waiting for input ...')
 
     algorithms = [
-        {'algorithm': WandererSequential, 'args': {'confused': False}},
-        {'algorithm': WandererThreaded, 'args': {'num_threads': 4, 'confused' : False}},
-        {'algorithm': WallHuggerSequential, 'args': {'direction': 'left'}},
-        {'algorithm': WallHuggerThreaded, 'args': {'num_threads': 2}},
+        # {'algorithm': WandererSequential, 'args': {'confused': False}},
+        # {'algorithm': WandererThreaded, 'args': {'num_threads': 4, 'confused' : False}},
+        # {'algorithm': WallHuggerSequential, 'args': {'direction': 'left'}},
+        # {'algorithm': WallHuggerThreaded, 'args': {'num_threads': 2}},
+        # {'algorithm': BFSSequential, 'args': {}},
+        # {'algorithm': BFSThreaded, 'args': {'num_threads': 4}},
+        # {'algorithm': DFSSequential, 'args': {}},
     ]
 
     mazes = [
-        {'maze' : MazeGenerator.generate(30, start_pos = 'random_corner', end_pos = 'random_corner'),
-         'max_steps' : 'auto', 'num_iterations' : 1}
+        {'maze' : MazeGenerator.generate(24, start_pos = 'random_corner', end_pos = 'random_corner'),
+         'max_steps' : 'fewest', 'num_iterations' : 1}
     ]
 
 

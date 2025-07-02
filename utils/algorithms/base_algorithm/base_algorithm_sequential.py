@@ -36,19 +36,23 @@ class BaseAlgorithmSequential(ABC):
         return reached_end
 
 
-    def get_legal_moves(self) -> list[tuple[int, int]]:
+    def get_legal_moves(self, position: tuple[int, int] = None) -> list[tuple[int, int]]:
         """
         Get a list of legal moves from the current position.
 
+        Arguments:
+            position: Specific position to check from, defaults to the current position.
+
         Returns:
-            A list of new positions that can be visited from the current.
+            A list of new positions that can be visited from the current or specified position.
             If no legal moves exist, the list will be empty.
         """
 
         if self.is_at_end():
             return []
 
-        position = self.memory['current_pos']
+        position = self.memory['current_pos'] if position is None else position
+
         check_moves = [
             (position[0] - 1, position[1]),
             (position[0] + 1, position[1]),

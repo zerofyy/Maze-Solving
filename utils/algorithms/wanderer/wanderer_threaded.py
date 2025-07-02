@@ -14,17 +14,18 @@ class WandererThreaded(BaseAlgorithmThreaded):
         - confused: Makes random moves without keeping track of visited spaces.
     """
 
-    def setup(self, maze: Maze, num_threads: int = 4, confused: bool = False) -> None:
+    def setup(self, maze: Maze, wait_for_flag: bool = False, num_threads: int = 4, confused: bool = False) -> None:
         """
         Set up the algorithm.
 
         Arguments:
             maze: Instance of the Maze class.
+            wait_for_flag: Whether to wait for the step flag to be set for threads to execute their logic.
             num_threads: Number of threads, defaults to 4 or less.
             confused: Whether the wanderer is confused.
         """
 
-        super().setup(maze, num_threads)
+        super().setup(maze, wait_for_flag, num_threads)
         for tid in range(self.num_threads):
             self.memory[tid]['breadcrumbs'] = [maze.start_pos]
         self.memory['confused'] = confused

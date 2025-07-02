@@ -10,21 +10,24 @@ class BaseAlgorithmThreaded(ABC):
     """ Abstract representation of a threaded maze solving algorithm. """
 
     maze: Maze = None
+    wait_for_flag: bool = None
     num_threads: int = None
     threads: list[threading.Thread] = None
     memory: dict[str | int, ...] = None
 
 
-    def setup(self, maze: Maze, num_threads: int = 4) -> None:
+    def setup(self, maze: Maze, wait_for_flag: bool = False, num_threads: int = 4) -> None:
         """
         Set up the algorithm.
 
         Arguments:
             maze: Instance of the Maze class.
+            wait_for_flag: Whether to wait for the step flag to be set for threads to execute their logic.
             num_threads: Number of threads, defaults to 4 or less.
         """
 
         self.maze = maze
+        self.wait_for_flag = wait_for_flag
         self.num_threads = min(num_threads, os.cpu_count()) if num_threads else min(4, os.cpu_count())
         self.threads = []
 
@@ -70,22 +73,24 @@ class BaseAlgorithmThreaded(ABC):
         return self.memory[tid]['current_pos'] == self.maze.end_pos
 
 
-    def get_legal_moves(self, tid: int) -> list[tuple[int, int]]:
+    def get_legal_moves(self, tid: int = None, position: tuple[int, int] = None) -> list[tuple[int, int]]:
         """
         Get a list of legal moves from the current position of the given thread.
 
         Arguments:
             tid: Thread ID.
+            position: Specific position to check from, defaults to the current position of the given thread.
 
         Returns:
-            A list of new positions that can be visited from the given thread's current position.
+            A list of new positions that can be visited from the specified or current thread position.
             If no legal moves exist, the list will be empty.
         """
 
         if self.is_at_end(tid):
             return []
 
-        position = self.memory[tid]['current_pos']
+        position = self.memory[tid]['current_pos'] if position is None else position
+
         check_moves = [
             (position[0] - 1, position[1]),
             (position[0] + 1, position[1]),
@@ -195,7 +200,7 @@ class BaseAlgorithmThreaded(ABC):
                 local_memory['response'] = 'Ended'
                 break
 
-            self.memory[tid]['step_flag'].wait(timeout = 0.01)
+            self.memory[tid]['step_flag'].wait(timeout = 0.03 if not self.wait_for_flag else None)
             self.memory[tid]['step_flag'].clear()
             self.memory[tid]['response'] = 'Stepping'
 

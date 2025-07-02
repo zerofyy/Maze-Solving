@@ -32,7 +32,7 @@ class WallHuggerThreaded(BaseAlgorithmThreaded):
     }
 
 
-    def setup(self, maze: Maze, num_threads: int = 4) -> None:
+    def setup(self, maze: Maze, wait_for_flag: bool = False, num_threads: int = 4) -> None:
         """
         Set up the algorithm.
 
@@ -42,6 +42,7 @@ class WallHuggerThreaded(BaseAlgorithmThreaded):
         """
 
         self.maze = maze
+        self.wait_for_flag = wait_for_flag
         self.num_threads = min(2, os.cpu_count())
         self.threads = []
 
