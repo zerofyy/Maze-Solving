@@ -4,7 +4,7 @@ from .coloring import Coloring
 
 
 class ListMaker:
-    """ Making lists from strings by filling blank spaces with information. """
+    """ Making visually appealing lists from strings by filling blank spaces with information. """
 
     @staticmethod
     def fill(text: str, info: list[tuple[str, str]]) -> str:

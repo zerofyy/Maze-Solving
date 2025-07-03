@@ -4,27 +4,30 @@ from utils.maze_generator import MazeGenerator
 from utils.assets import Coloring
 
 
-if __name__ == '__main__':
-    Coloring.init()
+Coloring.init()
 
+
+if __name__ == '__main__':
     input('... preventing program from starting by waiting for input ...')
 
+    # Choose which algorithms to run
     algorithms = [
-        # {'algorithm': WandererSequential, 'args': {'confused': False}},
-        # {'algorithm': WandererThreaded, 'args': {'num_threads': 4, 'confused' : False}},
-        # {'algorithm': WallHuggerSequential, 'args': {'direction': 'left'}},
-        # {'algorithm': WallHuggerThreaded, 'args': {'num_threads': 2}},
-        # {'algorithm': BFSSequential, 'args': {}},
-        # {'algorithm': BFSThreaded, 'args': {'num_threads': 4}},
-        # {'algorithm': DFSSequential, 'args': {}},
+        {'algorithm' : DFSSequential, 'args' : {}},
+        {'algorithm' : WandererThreaded, 'args' : {'num_threads' : 4, 'confused' : False}}
     ]
 
+    # Choose mazes to run the algorithms on
+    maze_s = MazeGenerator.generate(size = 10, start_pos = 'top_left', end_pos = 'bottom_right')
+    maze_m = MazeGenerator.generate(size = 50, start_pos = 'random_corner', end_pos = 'middle')
+    maze_l = MazeGenerator.generate(size = 100, start_pos = 'random_any', end_pos = 'random_any')
     mazes = [
-        {'maze' : MazeGenerator.generate(24, start_pos = 'random_corner', end_pos = 'random_corner'),
-         'max_steps' : 'fewest', 'num_iterations' : 1}
+        {'maze' : maze_s, 'max_steps' : 100, 'num_iterations' : 10},
+        {'maze' : maze_s, 'max_steps' : 'fewest', 'num_iterations' : 1},
+        {'maze' : maze_m, 'max_steps' : 'auto', 'num_iterations' : 5},
+        {'maze' : maze_l, 'max_steps' : 'unlimited', 'num_iterations' : 1}
     ]
 
-
+    # Run the solver
     for algorithm in algorithms:
         solver = MazeSolver(
             algorithm_args = algorithm,

@@ -62,15 +62,25 @@ class BaseAlgorithmThreaded(ABC):
             self.threads.append(thread)
 
 
-    def is_at_end(self, tid: int) -> bool:
+    def is_at_end(self, tid: int = None, position: tuple[int, int] = None) -> bool:
         """
         Check whether the current position of the given thread matches the maze end position.
 
         Arguments:
             tid: Thread ID.
+            position: Specific position to check from, defaults to the current position of the given thread.
+
+        Returns:
+            True if the specified position matches the end position, otherwise False.
         """
 
-        return self.memory[tid]['current_pos'] == self.maze.end_pos
+        position = self.memory[tid]['current_pos'] if position is None else position
+        reached_end = position == self.maze.end_pos
+
+        if reached_end:
+            self.memory['reached_end'] = True
+
+        return reached_end
 
 
     def get_legal_moves(self, tid: int = None, position: tuple[int, int] = None) -> list[tuple[int, int]]:
@@ -293,10 +303,6 @@ class BaseAlgorithmThreaded(ABC):
         """
 
         self.memory[tid]['current_pos'] = new_pos
-
-        if self.is_at_end(tid):
-            self.memory['reached_end'] = True
-
         self.memory['visited_pos'].add(new_pos)
 
 

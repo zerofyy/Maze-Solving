@@ -237,10 +237,7 @@ class ResultsCollector:
         )
 
         if coloring and option == 'string':
-            results = results.replace('|', f'[fb]|[rs]')
             results = results.replace('*', f'[fb][y]*[rs]')
-            results = results.replace('=', f'[fb]=[rs]')
-            results = results.replace('-', f'[fb]-[rs]')
         else:
             results = Coloring.uncolor(results)
 

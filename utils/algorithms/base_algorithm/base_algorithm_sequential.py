@@ -15,7 +15,7 @@ class BaseAlgorithmSequential(ABC):
         Set up the algorithm.
 
         Arguments:
-            maze: Instance of the maze being solved.
+            maze: Instance of the Maze class.
         """
 
         self.maze = maze
@@ -26,10 +26,20 @@ class BaseAlgorithmSequential(ABC):
         }
 
 
-    def is_at_end(self) -> bool:
-        """ Check whether the algorithm's current position matches the maze end position. """
+    def is_at_end(self, position: tuple[int, int] = None) -> bool:
+        """
+        Check whether the current or given position matches the maze end position.
 
-        reached_end = self.memory['current_pos'] == self.maze.end_pos
+        Arguments:
+            position: Specific position to check from, defaults to the current position.
+
+        Returns:
+             True if the specified position matches the end position, otherwise False.
+        """
+
+        position = self.memory['current_pos'] if position is None else position
+        reached_end = position == self.maze.end_pos
+
         if reached_end:
             self.memory['reached_end'] = True
 
@@ -38,7 +48,7 @@ class BaseAlgorithmSequential(ABC):
 
     def get_legal_moves(self, position: tuple[int, int] = None) -> list[tuple[int, int]]:
         """
-        Get a list of legal moves from the current position.
+        Get a list of legal moves from the current or given position.
 
         Arguments:
             position: Specific position to check from, defaults to the current position.

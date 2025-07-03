@@ -63,7 +63,9 @@ class MazeSolver:
             case 'auto':
                 return maze.size ** 2 * 2
             case 'fewest':
-                return
+                return int(
+                    12.3 * (abs(maze.start_pos[0] - maze.end_pos[0]) + abs(maze.start_pos[1] - maze.end_pos[1]))
+                )
             case 'unlimited':
                 return 0
             case _:
@@ -89,8 +91,8 @@ class MazeSolver:
             algorithm.setup(maze = maze, wait_for_flag = self.threaded_wait_for_flag, **self.algorithm_args['args'])
         else:
             algorithm.setup(maze = maze, **self.algorithm_args['args'])
-        collector.start('track')
 
+        collector.start('track')
         while True:
             if max_steps != 0 and collector.results['steps_taken'] == max_steps:
                 break
